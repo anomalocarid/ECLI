@@ -42,6 +42,7 @@ main(int argc, char** argv)
     
     print_th10_ecl_header(&header);
 
+    load_th10_includes(&header, f);
     fclose(f);
     return EXIT_SUCCESS;
 }

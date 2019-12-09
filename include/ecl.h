@@ -34,15 +34,27 @@
 #include "config.h"
 #include <stdint.h>
 
+// Rank masks
+#define RANK_EASY (0xF0 | (1 << 0))
+#define RANK_NORMAL (0xF0 | (1 << 1))
+#define RANK_HARD (0xF0 | (1 << 2))
+#define RANK_LUNATIC (0xF0 | (1 << 3))
+#define RANK_EN (RANK_EASY | RANK_NORMAL)
+#define RANK_HL (RANK_HARD | RANK_LUNATIC)
+#define RANK_ALL (RANK_EN | RANK_HL)
+
+/**
+ * Represents the header of a MoF-and-later ECL file
+ **/
 typedef struct {
 PACK_BEGIN
-    char magic[4];
+    char magic[4]; /* Always 'SCPT' */
     uint16_t unknown1; /* 1 */
     uint16_t include_length; /* include_offset + ANIM+ECLI length */
     uint32_t include_offset; /* sizeof(th10_header_t) */
-    uint32_t zero1;
-    uint32_t sub_count;
-    uint32_t zero2[4];
+    uint32_t zero1; /* always zero */
+    uint32_t sub_count; /* number of subroutines */
+    uint32_t zero2[4]; /* always zero */
 PACK_END
 } PACK_ATTRIBUTE th10_header_t;
 
@@ -66,8 +78,20 @@ PACK_BEGIN
 PACK_END
 } PACK_ATTRIBUTE th10_instr_t;
 
+typedef struct {
+PACK_BEGIN
+	char name[4]; /* 'ECLI' or 'ANIM' */
+	uint32_t count; /* number of files */
+	char data[]; /* start of the first string */
+PACK_END
+} PACK_ATTRIBUTE th10_include_list_t;
+
+/* ECL Header Functions */
 extern ecli_result_t read_th10_ecl_header(th10_header_t* header, FILE* f);
 extern int verify_th10_ecl_header(th10_header_t* header);
 extern void print_th10_ecl_header(th10_header_t* header);
+
+/* ECL Include List Functions */
+extern ecli_result_t load_th10_includes(th10_header_t* header, FILE* f);
 
 #endif

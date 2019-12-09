@@ -29,6 +29,7 @@
  * DAMAGE.
  **/
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ecli.h"
 
@@ -75,4 +76,80 @@ print_th10_ecl_header(th10_header_t* header)
     for(unsigned int i = 0; i < 4; i++) {
         printf("zero2 %d: %x\n", i, header->zero2[i]);
     }
+}
+
+/**
+ * Read the include lists after an ECL header
+ **/
+ecli_result_t
+load_th10_includes(th10_header_t* header, FILE* f)
+{
+    if(0 != fseek(f, header->include_offset, SEEK_SET)) {
+        return ECLI_FAILURE;
+    }
+    
+    // Buffer to hold the lists temporarily
+    size_t include_size = header->include_length - header->include_offset;
+    unsigned char* buf = malloc(include_size);
+    if(buf == NULL) {
+        return ECLI_FAILURE;
+    }
+    
+    // Load the lists into memory in their binary format
+    size_t amt = fread(buf, include_size, 1, f);
+    if(amt != 1) {
+        free(buf);
+        return ECLI_FAILURE;
+    }
+    
+    // Convert the first list to a list of char*s
+    th10_include_list_t* list = (th10_include_list_t*)buf;
+    unsigned int num_strings = 0;
+    char* basep = &list->data[0];
+    char* p = basep;
+    
+    char** strings = malloc(list->count * sizeof(char*));
+    
+    if(strings == NULL) {
+        free(buf);
+        return ECLI_FAILURE;
+    }
+    
+    memset(strings, 0, list->count * sizeof(char*));
+    
+    while(num_strings < list->count) {
+        while(*p) { p++; }
+        p++; // to include NULL character
+        char* str = malloc((size_t)(p - basep));
+        if(str == NULL) {
+            free(buf);
+            free(strings);
+            return ECLI_FAILURE;
+        }
+        
+        memcpy(str, basep, (size_t)(p - basep));
+        strings[num_strings] = str;
+        num_strings++;
+        basep = p;
+    }
+    
+    char name[5];
+    memcpy(&name[0], &list->name[0], 4*sizeof(char));
+    name[4] = '\0';
+    printf("Include type: %s\n", name);
+    if(num_strings > 0) {
+        printf("Strings: `%s'", strings[0]);
+        for(unsigned int i = 1; i < num_strings; i++) {
+            printf(", `%s'", strings[i]);
+        }
+        printf("\n");
+    }
+    
+    for(unsigned int i = 0; i < num_strings; i++)
+    {
+        free(strings[i]);
+    }
+    free(strings);
+    free(buf);
+    return ECLI_SUCCESS;
 }
