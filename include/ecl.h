@@ -66,4 +66,8 @@ PACK_BEGIN
 PACK_END
 } PACK_ATTRIBUTE th10_instr_t;
 
+extern ecli_result_t read_th10_ecl_header(th10_header_t* header, FILE* f);
+extern int verify_th10_ecl_header(th10_header_t* header);
+extern void print_th10_ecl_header(th10_header_t* header);
+
 #endif

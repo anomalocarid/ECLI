@@ -4,6 +4,7 @@ include(CheckCSourceRuns)
 include(CheckTypeSize)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
+include(CheckSymbolExists)
 
 project(ecli C)
 
@@ -11,29 +12,8 @@ project(ecli C)
 set(ECLI_VER_MAJOR 0)
 set(ECLI_VER_MINOR 1)
 
-# Structure packing
-check_c_source_runs("
-#include <stddef.h>
-struct test_t { char a;
-#pragma pack(push,1)
-int b; };
-#pragma pack(pop)
-int main() {
-return offsetof(struct test_t, b) == 1 ? 0 : 1;
-}
-" PACK_PRAGMA)
-if (NOT ${PACK_PRAGMA})
-  check_c_source_runs("
-  #include <stddef.h>
-  struct test_t { char a; int b; } __attribute__((packed));
-  int main() {
-  return offsetof(struct test_t, b) == 1 ? 0 : 1;
-  }
-  " PACK_ATTRIBUTE_AVAILABLE)
-  if (${PACK_ATTRIBUTE_AVAILABLE})
-    set(PACK_ATTRIBUTE "__attribute__((packed))")
-  endif()
-endif()
+check_include_file("string.h" HAVE_STRING_H)
+check_include_file("memory.h" HAVE_MEMORY_H)
 
 # Check for size_t
 check_type_size(size_t SIZE_T)
