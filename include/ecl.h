@@ -86,11 +86,17 @@ PACK_BEGIN
 PACK_END
 } PACK_ATTRIBUTE th10_include_list_t;
 
+typedef struct {
+    char* name;
+    th10_instr_t* start;
+} th10_ecl_sub_t;
+
 // Represents an ECL file loaded in memory
 typedef struct {
     th10_header_t* header;
     th10_include_list_t* anims;
     th10_include_list_t* eclis;
+    th10_ecl_sub_t* subs;
 } th10_ecl_t;
 
 // The kinds of includes allowed in ECL files

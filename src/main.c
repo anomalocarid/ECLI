@@ -48,6 +48,13 @@ main(int argc, char** argv)
         }
         printf("\n");
     }
+    
+    printf("Subs: %s", ecl.subs[0].name);
+    for(unsigned int i = 1; i < ecl.header->sub_count; i++) {
+        printf(", %s", ecl.subs[i].name);
+    }
+    printf("\n");
+
     free_th10_ecl(&ecl);
 
     return EXIT_SUCCESS;

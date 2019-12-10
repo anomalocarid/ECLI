@@ -98,7 +98,26 @@ load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f)
         p = p + (((uintptr_t)p) & 0x03);
     }
     
-    // p should conveniently point to whatever's next here as well
+    // Here p points to subs
+    uint32_t* sub_offsets = (uint32_t*)p;
+    uint8_t* names = (uint8_t*)(sub_offsets + ecl->header->sub_count);
+    
+    ecl->subs = xmalloc(sizeof(th10_ecl_sub_t) * ecl->header->sub_count);
+    
+    for(unsigned int i = 0; i < ecl->header->sub_count; i++) {
+        uint8_t* sub_start = ((uint8_t*)ecl->header) + sub_offsets[i];
+        if(*(uint32_t*)sub_start != *(uint32_t*)"ECLH") { 
+            fprintf(stderr, "Invalid sub start.\n");
+            free_th10_ecl(ecl);
+            return ECLI_FAILURE;
+        }
+        
+        ecl->subs[i].name = (char*)names;
+        ecl->subs[i].start = (th10_instr_t*)(sub_start+4);
+        
+        while(*names) { names++; }
+        names++;
+    }
     
     return ECLI_SUCCESS;
 }
@@ -110,6 +129,7 @@ void
 free_th10_ecl(th10_ecl_t* ecl)
 {
     xfree(ecl->header);
+    xfree(ecl->subs);
     memset(ecl, 0, sizeof(th10_ecl_t));
 }
 
