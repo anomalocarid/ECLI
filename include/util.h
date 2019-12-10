@@ -1,5 +1,5 @@
 /**
- * Main header for ECLI
+ * Utility functions for ECLI
  *
  * Redistribution and use in source and binary forms, with
  * or without modification, are permitted provided that the
@@ -28,26 +28,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  **/
-#ifndef __ECLI_H__
-#define __ECLI_H__
+#ifndef __ECLI_UTIL_H__
+#define __ECLI_UTIL_H__
 
 #include "config.h"
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#elif defined(HAVE_MEMORY_H)
-# include <memory.h>
-#endif
+#include <stdio.h>
+#include <stdlib.h>
 
-typedef enum {
-    ECLI_FAILURE=0,
-    ECLI_SUCCESS=1
-} ecli_result_t;
-
-#define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) != (ECLI_SUCCESS))
-
-#include "ecl.h"
-#include "util.h"
+#define xfree(p) { free((p)); (p) = NULL;}
+extern void* xmalloc(size_t amt);
 
 #endif

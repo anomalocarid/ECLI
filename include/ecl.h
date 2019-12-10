@@ -86,6 +86,13 @@ PACK_BEGIN
 PACK_END
 } PACK_ATTRIBUTE th10_include_list_t;
 
+// Represents an include list in memory
+typedef struct _include_list {
+	char name[5]; /* zero-character at the end */
+	unsigned int count;
+	char** data; /* list of strings */
+} include_list_t;
+
 /* ECL Header Functions */
 extern ecli_result_t read_th10_ecl_header(th10_header_t* header, FILE* f);
 extern int verify_th10_ecl_header(th10_header_t* header);

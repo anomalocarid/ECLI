@@ -79,6 +79,40 @@ print_th10_ecl_header(th10_header_t* header)
 }
 
 /**
+ * Read an include list and determine if there is one after
+ **/
+ecli_result_t
+get_next_th10_include_list(th10_header_t* header, 
+                           th10_include_list_t* base,
+                           th10_include_list_t** next,
+                           include_list_t* list)
+{
+    memcpy(&list->name[0], &base->name[0], sizeof(char)*4);
+    list->name[4] = '\0';
+    list->count = base->count;
+    list->data = xmalloc(list->count * sizeof(char*));
+    
+    unsigned int num_strings = 0;
+    char* basep = &base->data[0];
+    char* p = basep;
+    
+    while(num_strings < list->count) {
+        while(*p) { p++; }
+        p++; // Include 0 terminator and go to next string if it exists
+        size_t len = (size_t)(p - basep);
+        
+        list->data[num_strings] = xmalloc(len);
+        memcpy(list->data[num_strings], basep, len);
+        num_strings++;
+        basep = p;
+    }
+    
+    *next = (th10_include_list_t*)(p+2);
+
+    return ECLI_SUCCESS;
+}
+
+/**
  * Read the include lists after an ECL header
  **/
 ecli_result_t
@@ -90,66 +124,40 @@ load_th10_includes(th10_header_t* header, FILE* f)
     
     // Buffer to hold the lists temporarily
     size_t include_size = header->include_length - header->include_offset;
-    unsigned char* buf = malloc(include_size);
-    if(buf == NULL) {
-        return ECLI_FAILURE;
-    }
+    unsigned char* buf = xmalloc(include_size);
     
     // Load the lists into memory in their binary format
     size_t amt = fread(buf, include_size, 1, f);
     if(amt != 1) {
-        free(buf);
+        xfree(buf);
         return ECLI_FAILURE;
     }
     
     // Convert the first list to a list of char*s
-    th10_include_list_t* list = (th10_include_list_t*)buf;
-    unsigned int num_strings = 0;
-    char* basep = &list->data[0];
-    char* p = basep;
-    
-    char** strings = malloc(list->count * sizeof(char*));
-    
-    if(strings == NULL) {
-        free(buf);
-        return ECLI_FAILURE;
-    }
-    
-    memset(strings, 0, list->count * sizeof(char*));
-    
-    while(num_strings < list->count) {
-        while(*p) { p++; }
-        p++; // to include NULL character
-        char* str = malloc((size_t)(p - basep));
-        if(str == NULL) {
-            free(buf);
-            free(strings);
-            return ECLI_FAILURE;
-        }
+    th10_include_list_t* next = (th10_include_list_t*)buf;
+    include_list_t includes[2];
+    unsigned int cur_include = 0;
+    size_t total_len = 0;
+    size_t include_len = header->include_length - header->include_offset;
+
+    while(total_len < include_len) {
+        th10_include_list_t* base = next;
+        ecli_result_t result = get_next_th10_include_list(header, next, &next, &includes[cur_include]);
+        total_len += (size_t)(((char*)next) - ((char*)base));
+        printf("Include length: %d, Total length: %d\n", include_len, total_len);
+        fflush(stdout);
         
-        memcpy(str, basep, (size_t)(p - basep));
-        strings[num_strings] = str;
-        num_strings++;
-        basep = p;
-    }
-    
-    char name[5];
-    memcpy(&name[0], &list->name[0], 4*sizeof(char));
-    name[4] = '\0';
-    printf("Include type: %s\n", name);
-    if(num_strings > 0) {
-        printf("Strings: `%s'", strings[0]);
-        for(unsigned int i = 1; i < num_strings; i++) {
-            printf(", `%s'", strings[i]);
+        printf("Include type: %s\n", &includes[cur_include].name);
+        if(includes[cur_include].count > 0) {
+            printf("Includes: %s", includes[cur_include].data[0]);
+            for(unsigned int i = 1; i < includes[cur_include].count; i++) {
+                printf(", %s", includes[cur_include].data[i]);
+            }
+            printf("\n");
         }
-        printf("\n");
+        cur_include++;
+        fflush(stdout);
     }
-    
-    for(unsigned int i = 0; i < num_strings; i++)
-    {
-        free(strings[i]);
-    }
-    free(strings);
-    free(buf);
+
     return ECLI_SUCCESS;
 }
