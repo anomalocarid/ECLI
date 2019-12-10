@@ -86,19 +86,30 @@ PACK_BEGIN
 PACK_END
 } PACK_ATTRIBUTE th10_include_list_t;
 
-// Represents an include list in memory
-typedef struct _include_list {
-	char name[5]; /* zero-character at the end */
-	unsigned int count;
-	char** data; /* list of strings */
-} include_list_t;
+// Represents an ECL file loaded in memory
+typedef struct {
+    th10_header_t* header;
+    th10_include_list_t* anims;
+    th10_include_list_t* eclis;
+} th10_ecl_t;
+
+// The kinds of includes allowed in ECL files
+typedef enum {
+    INCLUDE_ANIM=0,
+    INCLUDE_ECLI,
+    INCLUDE_MAX
+} include_t;
+
+/* General ECL functions */
+extern ecli_result_t load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f);
+extern void free_th10_ecl(th10_ecl_t* ecl);
 
 /* ECL Header Functions */
-extern ecli_result_t read_th10_ecl_header(th10_header_t* header, FILE* f);
-extern int verify_th10_ecl_header(th10_header_t* header);
-extern void print_th10_ecl_header(th10_header_t* header);
+extern int verify_th10_ecl_header(th10_ecl_t* ecl);
+extern void print_th10_ecl_header(th10_ecl_t* ecl);
 
 /* ECL Include List Functions */
-extern ecli_result_t load_th10_includes(th10_header_t* header, FILE* f);
+extern th10_include_list_t* th10_ecl_get_include_list(th10_ecl_t* ecl, include_t include);
+extern char* th10_ecl_get_include(th10_include_list_t* list, unsigned int idx);
 
 #endif

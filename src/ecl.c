@@ -34,130 +34,148 @@
 #include "ecli.h"
 
 /**
- * Load in a MoF-and-later ECL header from a FILE object
+ * Load an entire ECL file into memory and set up pointers
  **/
 ecli_result_t
-read_th10_ecl_header(th10_header_t* header, FILE* f)
+load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f)
 {
+    memset(ecl, 0, sizeof(th10_ecl_t));
+
+    if(0 != fseek(f, 0, SEEK_END)) {
+        return ECLI_FAILURE;
+    }
+    
+    long size = ftell(f);
+    
     if(0 != fseek(f, 0, SEEK_SET)) {
         return ECLI_FAILURE;
     }
     
-    size_t amt = fread(header, sizeof(th10_header_t), 1, f);
+    uint8_t* p = (uint8_t*)xmalloc(size);
+    
+    size_t amt = fread(p, size, 1, f);
     if(amt != 1) {
+        xfree(p);
         return ECLI_FAILURE;
     }
+    
+    ecl->header = (th10_header_t*)p;
+    
+    // Make sure the magic number is present
+    if(!verify_th10_ecl_header(ecl)) {
+        uint8_t magic[5];
+        memcpy(&magic[0], &ecl->header->magic[0], 4*sizeof(uint8_t));
+        magic[4] = '\0';
+        fprintf(stderr, "Invalid magic number: %s\n", magic);
+        free_th10_ecl(ecl);
+        return ECLI_FAILURE;
+    }
+    
+    // ECL includes
+    uint8_t* include_base = p + ecl->header->include_offset;
+    uint8_t* include_end = p + ecl->header->include_length;
+    p = include_base;
 
+    // Get pointers to the start of the includes
+    while(p < include_end) {
+        th10_include_list_t* list = (th10_include_list_t*)p;
+        uint32_t name = *(uint32_t*)&list->name[0];
+        if(name == *(uint32_t*)"ANIM") {
+            ecl->anims = list;
+        } else if(name == *(uint32_t*)"ECLI") {
+            ecl->eclis = list;
+        } else {
+            fprintf(stderr, "Unknown include type: %s\n", list->name);
+            free_th10_ecl(ecl);
+            return ECLI_FAILURE;
+        }
+        
+        p = &list->data[0];
+        for(unsigned int i = 0; i < list->count; i++) {
+            while(*p) { p++; }
+            p++;
+        }
+        p = p + (((uintptr_t)p) & 0x03);
+    }
+    
+    // p should conveniently point to whatever's next here as well
+    
     return ECLI_SUCCESS;
+}
+
+/**
+ * Free a loaded ECL file
+ **/
+void
+free_th10_ecl(th10_ecl_t* ecl)
+{
+    xfree(ecl->header);
+    memset(ecl, 0, sizeof(th10_ecl_t));
 }
 
 /**
  * Verify the magic number in a MoF-and-later ECL header
  **/
 int
-verify_th10_ecl_header(th10_header_t* header)
+verify_th10_ecl_header(th10_ecl_t* ecl)
 {
-    return (int)((*(uint32_t*)&header->magic) == (*(uint32_t*)"SCPT"));
+    return (int)((*(uint32_t*)&ecl->header->magic) == (*(uint32_t*)"SCPT"));
 }
 
 /**
  * Dump an ECL header to STDOUT
  **/
 void
-print_th10_ecl_header(th10_header_t* header)
+print_th10_ecl_header(th10_ecl_t* ecl)
 {
     char magic[5];
-    memcpy(&magic[0], &header->magic[0], 4*sizeof(char));
+    memcpy(&magic[0], &ecl->header->magic[0], 4*sizeof(char));
+    magic[4] = '\0';
     printf("magic: %s\nunknown1: %x\ninclude_length: %d\n", 
-           &magic[0], header->unknown1, header->include_length);
+           &magic[0], ecl->header->unknown1, ecl->header->include_length);
     printf("include_offset: %d\nzero1: %x\nsub_count: %d\n",
-           header->include_offset, header->zero1, 
-           header->sub_count);
+           ecl->header->include_offset, ecl->header->zero1, 
+           ecl->header->sub_count);
     for(unsigned int i = 0; i < 4; i++) {
-        printf("zero2 %d: %x\n", i, header->zero2[i]);
+        printf("zero2 %d: %x\n", i, ecl->header->zero2[i]);
     }
 }
 
 /**
- * Read an include list and determine if there is one after
+ * Get an include list by type
  **/
-ecli_result_t
-get_next_th10_include_list(th10_header_t* header, 
-                           th10_include_list_t* base,
-                           th10_include_list_t** next,
-                           include_list_t* list)
+th10_include_list_t*
+th10_ecl_get_include_list(th10_ecl_t* ecl, include_t include)
 {
-    memcpy(&list->name[0], &base->name[0], sizeof(char)*4);
-    list->name[4] = '\0';
-    list->count = base->count;
-    list->data = xmalloc(list->count * sizeof(char*));
+    th10_include_list_t* list;
+    switch(include) {
+        case INCLUDE_ANIM:
+            list = ecl->anims;
+            break;
+        case INCLUDE_ECLI:
+            list = ecl->eclis;
+            break;
+    }
+    return list;
+}
+
+/**
+ * Get a pointer to an include name in an include list
+ **/
+char*
+th10_ecl_get_include(th10_include_list_t* list, unsigned int idx)
+{
+    if(idx > list->count) {
+        return NULL;
+    }
     
-    unsigned int num_strings = 0;
-    char* basep = &base->data[0];
-    char* p = basep;
-    
-    while(num_strings < list->count) {
+    uint8_t* p = (uint8_t*)&list->data[0];
+    unsigned int i = 0;
+    while((i != idx) && (i < list->count)) {
         while(*p) { p++; }
-        p++; // Include 0 terminator and go to next string if it exists
-        size_t len = (size_t)(p - basep);
-        
-        list->data[num_strings] = xmalloc(len);
-        memcpy(list->data[num_strings], basep, len);
-        num_strings++;
-        basep = p;
+        p++;
+        i++;
     }
     
-    *next = (th10_include_list_t*)(p+2);
-
-    return ECLI_SUCCESS;
-}
-
-/**
- * Read the include lists after an ECL header
- **/
-ecli_result_t
-load_th10_includes(th10_header_t* header, FILE* f)
-{
-    if(0 != fseek(f, header->include_offset, SEEK_SET)) {
-        return ECLI_FAILURE;
-    }
-    
-    // Buffer to hold the lists temporarily
-    size_t include_size = header->include_length - header->include_offset;
-    unsigned char* buf = xmalloc(include_size);
-    
-    // Load the lists into memory in their binary format
-    size_t amt = fread(buf, include_size, 1, f);
-    if(amt != 1) {
-        xfree(buf);
-        return ECLI_FAILURE;
-    }
-    
-    // Convert the first list to a list of char*s
-    th10_include_list_t* next = (th10_include_list_t*)buf;
-    include_list_t includes[2];
-    unsigned int cur_include = 0;
-    size_t total_len = 0;
-    size_t include_len = header->include_length - header->include_offset;
-
-    while(total_len < include_len) {
-        th10_include_list_t* base = next;
-        ecli_result_t result = get_next_th10_include_list(header, next, &next, &includes[cur_include]);
-        total_len += (size_t)(((char*)next) - ((char*)base));
-        printf("Include length: %d, Total length: %d\n", include_len, total_len);
-        fflush(stdout);
-        
-        printf("Include type: %s\n", &includes[cur_include].name);
-        if(includes[cur_include].count > 0) {
-            printf("Includes: %s", includes[cur_include].data[0]);
-            for(unsigned int i = 1; i < includes[cur_include].count; i++) {
-                printf(", %s", includes[cur_include].data[i]);
-            }
-            printf("\n");
-        }
-        cur_include++;
-        fflush(stdout);
-    }
-
-    return ECLI_SUCCESS;
+    return p;
 }
