@@ -1,0 +1,9 @@
+* Create interpreter state structure (stack, global variables, enemies, bullet managers, anything else?)
+ECL type: uint32_t or 32-bit float (use a union)
+Stack type: array of ECL types
+* Add ability to parse instructions - starting from a base pointer figure out the parameters, etc.
+* Implement basic instructions:
+  nop, wait, stackAlloc, push(f), add(f) - instructions 0-93 most important
+  add my own instruction that prints out a string for debug purposes
+* Debug code to print out the stack/interpreter state
+* Ability to step through an ECL file instruction by instruction
