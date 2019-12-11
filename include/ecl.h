@@ -32,6 +32,7 @@
 #define __ECL_H__
 
 #include "config.h"
+#include <stdio.h>
 #include <stdint.h>
 
 // Rank masks
@@ -127,5 +128,11 @@ extern void print_th10_ecl_header(th10_ecl_t* ecl);
 /* ECL Include List Functions */
 extern th10_include_list_t* th10_ecl_get_include_list(th10_ecl_t* ecl, include_t include);
 extern char* th10_ecl_get_include(th10_include_list_t* list, unsigned int idx);
+
+/* ECL Sub Functions */
+extern th10_ecl_sub_t* get_th10_ecl_sub_by_name(th10_ecl_t* ecl, const char* name);
+
+/* ECL Instruction Functions (in ins.c) */
+extern void print_th10_instruction(th10_instr_t* ins);
 
 #endif

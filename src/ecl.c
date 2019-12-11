@@ -198,3 +198,18 @@ th10_ecl_get_include(th10_include_list_t* list, unsigned int idx)
     
     return p;
 }
+
+/**
+ * Look up a sub by name
+ **/
+th10_ecl_sub_t*
+get_th10_ecl_sub_by_name(th10_ecl_t* ecl, const char* name)
+{
+    for(unsigned int i = 0; i < ecl->header->sub_count; i++) {
+        if(strcmp(ecl->subs[i].name, name) == 0) {
+            return &ecl->subs[i];
+        }
+    }
+    
+    return NULL;
+}

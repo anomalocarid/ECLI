@@ -1,5 +1,5 @@
 /**
- * Main header for ECLI
+ * Functions for handling the ECL interpreter state
  *
  * Redistribution and use in source and binary forms, with
  * or without modification, are permitted provided that the
@@ -28,27 +28,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  **/
-#ifndef __ECLI_H__
-#define __ECLI_H__
+#include "ecli.h"
 
-#include "config.h"
+/**
+ * Initialize the ECL interpreter state
+ **/
+ecli_result_t 
+initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl, unsigned int stack_size)
+{
+    state->stack_size = stack_size;
+    state->stackp = 0;
+    state->csp = 0;
+    state->ecl = ecl;
+    state->stack = xmalloc(sizeof(ecl_value_t)*stack_size);
+    state->callstack = xmalloc(sizeof(th10_instr_t*)*stack_size);
+    
+    memset(state->stack, 0, sizeof(ecl_value_t)*stack_size);
+    memset(state->callstack, 0, sizeof(th10_instr_t*)*stack_size);
+    
+    return ECLI_SUCCESS;
+}
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#elif defined(HAVE_MEMORY_H)
-# include <memory.h>
-#endif
-
-typedef enum {
-    ECLI_FAILURE=0,
-    ECLI_SUCCESS=1
-} ecli_result_t;
-
-#define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) != (ECLI_SUCCESS))
-
-#include "util.h"
-#include "ecl.h"
-#include "state.h"
-
-#endif
+/**
+ * Free the ECL interpreter state
+ **/
+void
+free_ecl_state(ecl_state_t* state)
+{
+    xfree(state->stack);
+    memset(state, 0, sizeof(ecl_state_t));
+}
