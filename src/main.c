@@ -38,6 +38,9 @@ main(int argc, char** argv)
     for(include_t i = INCLUDE_ANIM; i < INCLUDE_MAX; i++) {
         th10_include_list_t* list = th10_ecl_get_include_list(&ecl, i);
         printf("Include type: %s\n", &list->name[0]);
+        if(list->count < 1) {
+            continue;
+        }
         
         char* s = th10_ecl_get_include(list, 0);
         printf("Include list: %s", s);

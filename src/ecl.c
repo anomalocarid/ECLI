@@ -51,15 +51,13 @@ load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f)
         return ECLI_FAILURE;
     }
     
-    uint8_t* p = (uint8_t*)xmalloc(size);
+    ecl->header = (th10_header_t*)xmalloc(size);
     
-    size_t amt = fread(p, size, 1, f);
+    size_t amt = fread(ecl->header, size, 1, f);
     if(amt != 1) {
-        xfree(p);
+        xfree(ecl->header);
         return ECLI_FAILURE;
     }
-    
-    ecl->header = (th10_header_t*)p;
     
     // Make sure the magic number is present
     if(!verify_th10_ecl_header(ecl)) {
@@ -72,9 +70,9 @@ load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f)
     }
     
     // ECL includes
-    uint8_t* include_base = p + ecl->header->include_offset;
-    uint8_t* include_end = p + ecl->header->include_length;
-    p = include_base;
+    uint8_t* include_base = (uint8_t*)ecl->header + ecl->header->include_offset;
+    uint8_t* include_end = include_base + ecl->header->include_length;
+    uint8_t* p = include_base;
 
     // Get pointers to the start of the includes
     while(p < include_end) {
@@ -105,15 +103,16 @@ load_th10_ecl_from_file_object(th10_ecl_t* ecl, FILE* f)
     ecl->subs = xmalloc(sizeof(th10_ecl_sub_t) * ecl->header->sub_count);
     
     for(unsigned int i = 0; i < ecl->header->sub_count; i++) {
-        uint8_t* sub_start = ((uint8_t*)ecl->header) + sub_offsets[i];
-        if(*(uint32_t*)sub_start != *(uint32_t*)"ECLH") { 
+        th10_sub_t* sub = (th10_sub_t*)(((uint8_t*)ecl->header) + sub_offsets[i]);
+        if(*(uint32_t*)&sub->magic[0] != *(uint32_t*)"ECLH") { 
             fprintf(stderr, "Invalid sub start.\n");
             free_th10_ecl(ecl);
             return ECLI_FAILURE;
         }
         
         ecl->subs[i].name = (char*)names;
-        ecl->subs[i].start = (th10_instr_t*)(sub_start+4);
+        ecl->subs[i].sub = sub;
+        ecl->subs[i].start = (th10_instr_t*)&sub->data[0];
         
         while(*names) { names++; }
         names++;

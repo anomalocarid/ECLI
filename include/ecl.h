@@ -87,7 +87,17 @@ PACK_END
 } PACK_ATTRIBUTE th10_include_list_t;
 
 typedef struct {
+PACK_BEGIN
+    char magic[4];
+    uint32_t data_offset; /* sizeof(th10_sub_t) */
+    uint32_t zero[2];
+    unsigned char data[];
+PACK_END
+} PACK_ATTRIBUTE th10_sub_t;
+
+typedef struct {
     char* name;
+    th10_sub_t* sub;
     th10_instr_t* start;
 } th10_ecl_sub_t;
 
