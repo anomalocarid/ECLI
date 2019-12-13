@@ -3,11 +3,13 @@
 
 #include "ecli.h"
 
-static int has_help;
+static int show_header, show_includes;
 static int verbose;
 
 param_t params[] = {
     {'h', "help", NULL, 0, "Print this message."},
+    {'H', "dump-header", &show_header, 0, "Dump the ECL header."},
+    {'I', "dump-includes", &show_includes, 0, "Dump the ECL ANIM/ECLI includes."},
     {'v', "verbose", &verbose, 0, "Print a lot of useful debug information."},
     {0, NULL, NULL, 0, NULL}
 };
@@ -51,6 +53,7 @@ main(int argc, char** argv)
     }
     
     FILE* f = fopen(fname, "rb");
+
     if(f == NULL) {
         fprintf(stderr, "Failed to open file %s\n", fname);
         return EXIT_FAILURE;
@@ -72,9 +75,11 @@ main(int argc, char** argv)
     }
     
     /* Dump some information about the file */
-    if(verbose) {
+    if(show_header) {
         print_th10_ecl_header(&ecl);
-        
+    }
+    
+    if(show_includes) {
         for(include_t i = INCLUDE_ANIM; i < INCLUDE_MAX; i++) {
             th10_include_list_t* list = th10_ecl_get_include_list(&ecl, i);
             printf("Include type: %s\n", &list->name[0]);

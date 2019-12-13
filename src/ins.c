@@ -41,23 +41,32 @@ print_th10_instruction_raw(th10_instr_t* ins)
            ins->param_mask, ins->rank_mask, ins->param_count);
 }
 
+static uint8_t last_mask = 0x0F;
+
 void
 print_th10_instruction(th10_instr_t* ins)
 {
-    print_th10_instruction_raw(ins);
-    putchar('!');
-    if(ins->rank_mask & 0x0F) {
-        putchar('*');
-    } else {
-        if(ins->rank_mask & 0x08) putchar('L');
-        if(ins->rank_mask & 0x04) putchar('H');
-        if(ins->rank_mask & 0x02) putchar('N');
-        if(ins->rank_mask & 0x01) putchar('E');
+    uint8_t rank_mask = ins->rank_mask & 0x0F;
+    if(rank_mask != last_mask) {
+        putchar('!');
+        if(rank_mask) {
+            putchar('*');
+        } else {
+            if(rank_mask & 0x08) putchar('L');
+            if(rank_mask & 0x04) putchar('H');
+            if(rank_mask & 0x02) putchar('N');
+            if(rank_mask & 0x01) putchar('E');
+        }
+        putchar('\n');
+        last_mask = rank_mask;
     }
+
+    int amt = 6;
     if(ins->time != 0) {
-        printf("\n%d:    ", ins->time);
-    }else {
-        printf("\n    ");
+        amt -= printf("%d:", ins->time);
+    }
+    for(unsigned int i = 0; i < amt; i++) {
+        putchar(' ');
     }
 
     switch(ins->id) {
@@ -73,8 +82,15 @@ print_th10_instruction(th10_instr_t* ins)
             printf("unknown30(\"%s\")", s);
         }   break;
         case 40: {
-            uint32_t amt = *(uint32_t*)&ins->data[0];
-            printf("stackAlloc(%d)", amt);
+            uint32_t amt = (*(uint32_t*)&ins->data[0]) >> 2;
+            if(amt > 0) {
+                printf("var A");
+                for(unsigned int i = 1; i < amt; i++) {
+                    printf(", %c", 'A'+i);
+                }
+            } else {
+                printf("stackAlloc(%d)", amt);
+            }
         }   break;
         case 42: {
             uint32_t value = *(uint32_t*)&ins->data[0];
