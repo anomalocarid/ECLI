@@ -48,13 +48,17 @@ typedef struct {
 } ecl_value_t;
 
 typedef struct {
+    // Data stack
     size_t stack_size;
-    uint32_t stackp;
-    uint32_t basep;
+    uint32_t sp; // Stack pointer
+    uint32_t bp; // Base pointer
     ecl_value_t* stack;
+    // Call stack
     th10_instr_t** callstack;
-    th10_ecl_t* ecl;
     uint32_t csp;
+    
+    th10_ecl_t* ecl; // ECL data
+    th10_instr_t* ip; // Instruction pointer
 } ecl_state_t;
 
 /* state.c */
@@ -62,6 +66,6 @@ extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl, u
 extern void free_ecl_state(ecl_state_t* state);
 
 /* interpreter.c */
-extern ecli_result_t run_th10_instruction(ecl_state_t* state, th10_instr_t* ins, th10_instr_t** next);
+extern ecli_result_t run_th10_instruction(ecl_state_t* state);
 
 #endif 

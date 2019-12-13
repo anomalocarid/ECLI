@@ -41,11 +41,12 @@
 
 typedef enum {
     ECLI_FAILURE=0,
-    ECLI_SUCCESS=1
+    ECLI_SUCCESS=1,
+    ECLI_DONE
 } ecli_result_t;
 
 #define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) != (ECLI_SUCCESS))
+#define FAILURE(expr) ((expr) == (ECLI_FAILURE))
 
 #include "util.h"
 #include "ecl.h"

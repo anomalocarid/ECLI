@@ -36,9 +36,8 @@
 ecli_result_t 
 initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl, unsigned int stack_size)
 {
+    memset(state, 0, sizeof(ecl_state_t));
     state->stack_size = stack_size;
-    state->stackp = 0;
-    state->csp = 0;
     state->ecl = ecl;
     state->stack = xmalloc(sizeof(ecl_value_t)*stack_size);
     state->callstack = xmalloc(sizeof(th10_instr_t*)*stack_size);
@@ -56,5 +55,6 @@ void
 free_ecl_state(ecl_state_t* state)
 {
     xfree(state->stack);
+    xfree(state->callstack);
     memset(state, 0, sizeof(ecl_state_t));
 }

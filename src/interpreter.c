@@ -35,31 +35,34 @@
 static void
 pushi(ecl_state_t* s, uint32_t i)
 {
-    s->stack[s->stackp].type = ECL_INT;
-    s->stack[s->stackp++].u = i;
+    s->stack[s->sp].type = ECL_INT;
+    s->stack[s->sp++].u = i;
 }
 
 static uint32_t
 popi(ecl_state_t* s)
 {
-    return s->stack[--s->stackp].u;
+    return s->stack[--s->sp].u;
 }
 
 /**
  * Run a single ECL instruction
  **/
 ecli_result_t
-run_th10_instruction(ecl_state_t* state, th10_instr_t* ins, th10_instr_t** next)
+run_th10_instruction(ecl_state_t* state)
 {
-    th10_instr_t* _next = NULL;
     ecli_result_t retval = ECLI_SUCCESS;
+    th10_instr_t* ins = state->ip;
+    th10_instr_t* next = (th10_instr_t*)(((uint8_t*)ins) + ins->size);
 
     switch(ins->id) {
         case 10: // return
-            state->stackp = state->basep;
-            state->basep = popi(state);
-            if(state->csp > 0) {
-                _next = state->callstack[--state->csp];
+            state->sp = state->bp;
+            state->bp = popi(state);
+            if(state->csp == 0) {
+                retval = ECLI_DONE;
+            } else {
+                next = state->callstack[--state->csp];
             }
             break;
 
@@ -67,14 +70,13 @@ run_th10_instruction(ecl_state_t* state, th10_instr_t* ins, th10_instr_t** next)
             uint32_t len = *(uint32_t*)&ins->data[0];
             char* name = &ins->data[4];
             
-            state->callstack[state->csp++] = (th10_instr_t*)&ins->data[4+len];
+            state->callstack[state->csp++] = next;
             th10_ecl_sub_t* sub = get_th10_ecl_sub_by_name(state->ecl, name);
             if(sub == NULL) {
                 fprintf(stderr, "call: sub \"%s\" does not exist\n", name);
                 retval = ECLI_FAILURE;
-            } else {
-                _next = sub->start;
             }
+            next = sub->start;
         }   break;
         
         case 30: { // unknown30 - we're using this as a string print statement
@@ -82,34 +84,26 @@ run_th10_instruction(ecl_state_t* state, th10_instr_t* ins, th10_instr_t** next)
             char* s = &ins->data[4];
             
             printf("%s\n", s);
-            
-            _next = (th10_instr_t*)&ins->data[4+len];
         }   break;
 
         case 40: { // stackAlloc
             uint32_t amt = (*(uint32_t*)&ins->data[0]) >> 2;
             
-            pushi(state, state->basep);
-            state->basep = state->stackp;
-            state->stackp += amt;
-            
-            _next = (th10_instr_t*)&ins->data[4];
+            pushi(state, state->bp);
+            state->bp = state->sp;
+            state->sp += amt;
         }   break;
 
         case 42: { // push
             uint32_t value = *(uint32_t*)&ins->data[0];
             
             pushi(state, value);
-            
-            _next = (th10_instr_t*)&ins->data[4];
         }   break;
 
         case 43: { // set
             uint32_t var = *(uint32_t*)&ins->data[0];
-            state->stack[state->basep+var].type = ECL_INT;
-            state->stack[state->basep+var].u = popi(state);
-            
-            _next = (th10_instr_t*)&ins->data[4];
+            state->stack[state->bp+var].type = ECL_INT;
+            state->stack[state->bp+var].u = popi(state);
         }   break;
         
         default:
@@ -118,8 +112,6 @@ run_th10_instruction(ecl_state_t* state, th10_instr_t* ins, th10_instr_t** next)
             break;
     }
     
-    if(next != NULL) {
-        *next = _next;
-    }
+    state->ip = next;
     return retval;
 }

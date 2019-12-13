@@ -81,12 +81,21 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
     
-    th10_instr_t* ins = sub->start;
-    while(ins != NULL) {
+    /* Current interpeter loop - get next instruction and execute */
+    state.ip = sub->start;
+    
+    while(1) {
         if(verbose) {
-            print_th10_instruction(ins);
+            print_th10_instruction(state.ip);
         }
-        run_th10_instruction(&state, ins, &ins);
+        result = run_th10_instruction(&state);
+        
+        if(result == ECLI_DONE) {
+            break;
+        } else if(result == ECLI_FAILURE) {
+            fprintf(stderr, "Interpretation failed.\n");
+            break;
+        }
     }
 
     free_ecl_state(&state);
