@@ -6,7 +6,7 @@
 int
 main(int argc, char** argv)
 {
-    int verbose = 0;
+    int verbose = 1;
 
     if(argc <= 1) {
         exit(EXIT_SUCCESS);
@@ -88,8 +88,8 @@ main(int argc, char** argv)
         if(verbose) {
             print_th10_instruction(state.ip);
         }
+        fflush(stdout);
         result = run_th10_instruction(&state);
-        
         if(result == ECLI_DONE) {
             break;
         } else if(result == ECLI_FAILURE) {

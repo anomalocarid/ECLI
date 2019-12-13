@@ -43,7 +43,7 @@ typedef struct {
     ecl_type_t type;
     union {
         float f;
-        uint32_t u;
+        int32_t i;
     };
 } ecl_value_t;
 
@@ -59,6 +59,10 @@ typedef struct {
     
     th10_ecl_t* ecl; // ECL data
     th10_instr_t* ip; // Instruction pointer
+    
+    //Internal state
+    uint32_t flags;
+    uint32_t chapter;
 } ecl_state_t;
 
 /* state.c */

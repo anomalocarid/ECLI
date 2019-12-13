@@ -33,16 +33,37 @@
 #include "state.h"
 
 static void
-pushi(ecl_state_t* s, uint32_t i)
+pushi(ecl_state_t* s, int32_t i)
 {
     s->stack[s->sp].type = ECL_INT;
-    s->stack[s->sp++].u = i;
+    s->stack[s->sp++].i = i;
 }
 
-static uint32_t
+static int32_t
 popi(ecl_state_t* s)
 {
-    return s->stack[--s->sp].u;
+    return s->stack[--s->sp].i;
+}
+
+// get int variable
+static int32_t
+getvi(ecl_state_t* s, uint32_t idx)
+{
+    return s->stack[s->bp+idx].i;
+}
+
+// get int param
+static int32_t
+geti(ecl_state_t* s, uint8_t slot)
+{
+    th10_instr_t* ins = s->ip;
+    uint16_t mask = ins->param_mask;
+    uint32_t val = *(((uint32_t*)&ins->data[0]) + slot);
+    if((mask >> slot) & 1) {
+        return getvi(s, val);
+    }
+    
+    return (int32_t)val;
 }
 
 /**
@@ -79,6 +100,11 @@ run_th10_instruction(ecl_state_t* state)
             next = sub->start;
         }   break;
         
+        case 23: { // wait 
+            uint32_t amt = geti(state, 0);
+            // TODO: actually wait
+        }   break;
+        
         case 30: { // unknown30 - we're using this as a string print statement
             uint32_t len = *(uint32_t*)&ins->data[0];
             char* s = &ins->data[4];
@@ -87,7 +113,7 @@ run_th10_instruction(ecl_state_t* state)
         }   break;
 
         case 40: { // stackAlloc
-            uint32_t amt = (*(uint32_t*)&ins->data[0]) >> 2;
+            uint32_t amt = geti(state, 0) >> 2;
             
             pushi(state, state->bp);
             state->bp = state->sp;
@@ -95,15 +121,22 @@ run_th10_instruction(ecl_state_t* state)
         }   break;
 
         case 42: { // push
-            uint32_t value = *(uint32_t*)&ins->data[0];
-            
-            pushi(state, value);
+            pushi(state, geti(state, 0));
         }   break;
 
         case 43: { // set
             uint32_t var = *(uint32_t*)&ins->data[0];
             state->stack[state->bp+var].type = ECL_INT;
-            state->stack[state->bp+var].u = popi(state);
+            state->stack[state->bp+var].i = popi(state);
+        }   break;
+        
+        case 502: { // flagSet
+            state->flags = geti(state, 0);
+            break;
+        }
+        
+        case 524: { // setChapter
+            state->chapter = geti(state, 0);
         }   break;
         
         default:
