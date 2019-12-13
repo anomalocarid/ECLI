@@ -1,5 +1,7 @@
-* Create interpreter state structure (stack, global variables, enemies, bullet managers, anything else?)
-ECL type: uint32_t or 32-bit float (use a union)
 * Debug code to print out the stack/interpreter state
 * Ability to step through an ECL file instruction by instruction
-* Figure out the param_mask parameter in the instruction struct
+* Support for multiple ECL instances (to allow async subs)
+* Support for time labels (frames)
+* Support for difficulty/rank masks
+* Command line argument parsing
+* Use binary search for finding subs by name

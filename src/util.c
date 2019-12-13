@@ -32,6 +32,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+static int argc;
+static int cur;
+static char** argv;
+static char* param;
 
 void*
 xmalloc(size_t amt)
@@ -43,4 +50,83 @@ xmalloc(size_t amt)
     }
     
     return p;
+}
+
+/**
+ * Command-line argument parsing
+ **/
+void
+args_set(int _argc, char** _argv)
+{
+    argc = _argc;
+    argv = _argv;
+    cur = 1;
+}
+
+int
+arg_get(param_t* params)
+{
+    if(cur >= argc) {
+        return 0;
+    }
+    
+    char* arg = argv[cur++];
+    char c = arg[0];
+    
+    int is_long = 0;
+    if(c != '\0') {
+        if(c == '-') { /* option */
+            if(arg[1] == '-') { /* long option */
+                is_long = 1;
+            }
+        } else { /* positional argument */
+            param = arg;
+            return 1;
+        }
+        
+        // Look for the option
+        char found = 0;
+        for(param_t* p = params; p->shortname != '\0'; p++) {
+            
+            if(is_long) {
+                if(strcmp(&arg[2], p->longname) == 0) {
+                    found = p->shortname;
+                }
+            } else {
+                if(arg[1] == p->shortname) {
+                    found = p->shortname;
+                }
+            }
+            
+            // Look for the option's parameter, if it needs one
+            if(found) {
+                if(p->flag != NULL) {
+                    *(p->flag) = 1;
+                }
+
+                if(p->has_arg) {
+                    if((cur >= argc) || (argv[cur][0] == '-')) {
+                        fprintf(stderr, "No argument given for %s\n", arg);
+                    }
+                    param = argv[cur++];
+                }
+                break;
+            }
+        }
+        
+        if(!found) {
+            fprintf(stderr, "Unrecognized option: %s\n", arg);
+            return -1;
+        }
+        
+        return found;
+    }
+
+    return 0;
+}
+
+const char*
+arg_get_param()
+{
+    return param;
 }

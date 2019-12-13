@@ -36,7 +36,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Memory management and allocation */
 #define xfree(p) { free((p)); (p) = NULL;}
 extern void* xmalloc(size_t amt);
+
+/* Command-line arguments */
+typedef struct {
+    char shortname;
+    char* longname;
+    int* flag;
+    int has_arg;
+    char *desc;
+} param_t;
+
+extern void args_set(int _argc, char** _argv);
+extern int arg_get(param_t* params);
+extern const char* arg_get_param();
 
 #endif

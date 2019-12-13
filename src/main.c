@@ -3,16 +3,52 @@
 
 #include "ecli.h"
 
+static int has_help;
+static int verbose;
+
+param_t params[] = {
+    {'h', "help", NULL, 0, "Print this message."},
+    {'v', "verbose", &verbose, 0, "Print a lot of useful debug information."},
+    {0, NULL, NULL, 0, NULL}
+};
+
 int
 main(int argc, char** argv)
 {
-    int verbose = 1;
+    /* Parse command-line arguments */
+    args_set(argc, argv);
+    const char* fname = NULL;
+    int c;
 
-    if(argc <= 1) {
-        exit(EXIT_SUCCESS);
+    while((c = arg_get(params)) != 0) {
+        fflush(stdout);
+        switch(c) {
+            case -1:
+                return EXIT_FAILURE;
+                break;
+
+            case 'h':
+                return EXIT_SUCCESS;
+                break;
+
+            case 1: // ECL file (positional arg)
+                if(fname != NULL) {
+                    fprintf(stderr, "Multiple files given on command line.\n");
+                    return EXIT_FAILURE;
+                }
+                
+                fname = arg_get_param();
+                break;
+
+            default:
+                break;
+        }
     }
     
-    char* fname = argv[1];
+    if(fname == NULL) {
+        fprintf(stderr, "No ECL file given.\n");
+        return EXIT_FAILURE;
+    }
     
     FILE* f = fopen(fname, "rb");
     if(f == NULL) {
