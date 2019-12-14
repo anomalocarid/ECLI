@@ -50,7 +50,7 @@ Instructions probably have the most complex structure of objects in the ECL form
 * `time`, 4 bytes. The earliest time (in frames) the instruction will execute.
 * `id`, 2 bytes. The identifier/opcode of the instruction. See [this list](https://priw8.github.io/#s=modding/ins).
 * `size`, 2 bytes. Total size of the instruction including parameters.
-* `param_mask`, 2 bytes. Not sure on this yet, seems to be related to the types of paramaeters.
+* `param_mask`, 2 bytes. Mask for parameters indicating whether they are immediate or variable references.
 * `rank_mask`, 1 byte. Bitmask of difficulties to execute the instruction on. `1111LHNE`
 * `param_count`, 1 byte. Number of parameters of the instruction.
 * `zero`, 4 bytes. From TH13 on, is used for something I don't understand yet.
@@ -58,12 +58,12 @@ Instructions probably have the most complex structure of objects in the ECL form
 The parameters of the instruction follow this object immediately.
 Floats, ints, and variable references seem to just be 4-byte values right after the instruction.
 If an instruction takes a string, it is given as a null-terminated string after the instruction as well.
+Jump instructions have an offset (4-byte signed integer) and time (4-byte unsigned integer) as params.
 
 # Interpreter State
 ECL uses a stack based interpreter. Most instructions operate on the stack and local variables are
 also stored on the stack. The call stack is separate from the main stack.
-There are also global variables and "local" variables which exist outside of the stack, although I
-haven't implemented those yet.
+There are also global variables and "local" variables which exist outside of the stack.
 
 # Sources
 Where I got information I used for implementation.
