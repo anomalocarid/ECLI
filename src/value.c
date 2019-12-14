@@ -1,5 +1,5 @@
 /**
- * Main header for ECLI
+ * ECL value handling for instruction parameters
  *
  * Redistribution and use in source and binary forms, with
  * or without modification, are permitted provided that the
@@ -28,30 +28,46 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  **/
-#ifndef __ECLI_H__
-#define __ECLI_H__
+#include "ecli.h"
 
-#include "config.h"
+ecli_result_t
+value_get_parameters(ecl_value_t* values, const char* format, uint8_t* data)
+{
+    size_t len = strlen(format);
+    
+    for(unsigned int i = 0; i < len; i++) {
+        switch(format[i]) {
+            case 'f':
+                values[i].type = ECL_FLOAT32;
+                values[i].f = *(float*)data;
+                data += 4;
+                break;
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#elif defined(HAVE_MEMORY_H)
-# include <memory.h>
-#endif
-
-typedef enum {
-    ECLI_FAILURE=0,
-    ECLI_SUCCESS=1,
-    ECLI_DONE
-} ecli_result_t;
-
-#define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) == (ECLI_FAILURE))
-
-#include "util.h"
-#include "ecl.h"
-#include "ins.h"
-#include "value.h"
-#include "state.h"
-
-#endif
+            case 'i':
+                values[i].type = ECL_INT32;
+                values[i].i = *(int32_t*)data;
+                data += 4;
+                break;
+            
+            case 's':
+                values[i].type = ECL_STRING;
+                uint32_t len = *(uint32_t*)data;
+                values[i].s = (char*)(data+4);
+                data = data + 4 + len;
+                break;
+            
+            case 'u':
+                values[i].type = ECL_UINT32;
+                values[i].u = *(uint32_t*)data;
+                data += 4;
+                break;
+                
+            default:
+                fprintf(stderr, "Unrecognized format char: %c\n", format[i]);
+                return ECLI_FAILURE;
+                break;
+        }
+    }
+    
+    return ECLI_SUCCESS;
+}

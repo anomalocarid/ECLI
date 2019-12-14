@@ -31,6 +31,7 @@
 #ifndef __ECL_H__
 #define __ECL_H__
 
+#include "value.h"
 #include "config.h"
 #include <stdio.h>
 #include <stdint.h>
@@ -134,5 +135,6 @@ extern th10_ecl_sub_t* get_th10_ecl_sub_by_name(th10_ecl_t* ecl, const char* nam
 
 /* ECL Instruction Functions (in ins.c) */
 extern void print_th10_instruction(th10_instr_t* ins);
+extern ecli_result_t get_ins_params(th10_instr_t* ins, ecl_value_t* values);
 
 #endif

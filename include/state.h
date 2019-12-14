@@ -33,20 +33,6 @@
 
 #include "ecli.h"
 
-typedef enum {
-    ECL_INVALID=0,
-    ECL_INT,
-    ECL_FLOAT
-} ecl_type_t;
-
-typedef struct {
-    ecl_type_t type;
-    union {
-        float f;
-        int32_t i;
-    };
-} ecl_value_t;
-
 enum {
     DIFF_EASY=1,
     DIFF_NORMAL=2,

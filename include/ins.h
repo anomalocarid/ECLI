@@ -1,5 +1,5 @@
 /**
- * Main header for ECLI
+ * ECL instructions
  *
  * Redistribution and use in source and binary forms, with
  * or without modification, are permitted provided that the
@@ -28,30 +28,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  **/
-#ifndef __ECLI_H__
-#define __ECLI_H__
+#ifndef __ECLI_INS_H__
+#define __ECLI_INS_H__
 
-#include "config.h"
-
-#ifdef HAVE_STRING_H
-# include <string.h>
-#elif defined(HAVE_MEMORY_H)
-# include <memory.h>
-#endif
-
+//th17 ins IDs
 typedef enum {
-    ECLI_FAILURE=0,
-    ECLI_SUCCESS=1,
-    ECLI_DONE
-} ecli_result_t;
+    //system instructions
+    INS_NOP=0,
+    INS_DELETE=1,
+    INS_RET=10,
+    INS_CALL=11,
+    INS_JMP=12,
+    INS_JMPEQ=13,
+    INS_JMPNEQ=14,
+    INS_CALLASYNC=15,
+    INS_UNKNOWN21=21,
+    INS_WAIT=23,
+    INS_UNKNOWN30=30,
+    INS_STACKALLOC=40,
+    INS_PUSH=42,
+    INS_SET=43,
+    INS_DECI=78,
 
-#define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) == (ECLI_FAILURE))
-
-#include "util.h"
-#include "ecl.h"
-#include "ins.h"
-#include "value.h"
-#include "state.h"
+    INS_INVALID=0xFFFF
+} ecl_ins_id;
 
 #endif

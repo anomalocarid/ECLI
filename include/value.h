@@ -1,5 +1,5 @@
 /**
- * Main header for ECLI
+ * ECL value handling for instruction parameters
  *
  * Redistribution and use in source and binary forms, with
  * or without modification, are permitted provided that the
@@ -28,30 +28,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  **/
-#ifndef __ECLI_H__
-#define __ECLI_H__
+#ifndef __ECLI_VALUE_H__
+#define __ECLI_VALUE_H__
 
-#include "config.h"
+#include <stdint.h>
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#elif defined(HAVE_MEMORY_H)
-# include <memory.h>
-#endif
-
+// Possible data types in an ECL instruction parameter list
 typedef enum {
-    ECLI_FAILURE=0,
-    ECLI_SUCCESS=1,
-    ECLI_DONE
-} ecli_result_t;
+    ECL_INVALID=0,
+    ECL_INT32,
+    ECL_UINT32,
+    ECL_FLOAT32,
+    ECL_STRING
+} ecl_type_t;
 
-#define SUCCESS(expr) ((expr) == (ECLI_SUCCESS))
-#define FAILURE(expr) ((expr) == (ECLI_FAILURE))
+typedef struct {
+    ecl_type_t type;
+    union {
+        int32_t i;
+        uint32_t u;
+        float f;
+        char* s;
+    };
+} ecl_value_t;
 
-#include "util.h"
-#include "ecl.h"
-#include "ins.h"
-#include "value.h"
-#include "state.h"
+extern ecli_result_t value_get_parameters(ecl_value_t* values, const char* format, uint8_t* data);
 
 #endif

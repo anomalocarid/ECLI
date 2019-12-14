@@ -35,6 +35,39 @@
 
 static uint8_t last_mask = 0x0F;
 
+// Instruction parameter format strings
+typedef struct {
+    uint16_t id;
+    const char* format;
+} ins_format_t;
+
+static const ins_format_t instruction_formats[] = {
+    {INS_NOP, ""},
+    {INS_DELETE, ""},
+    {INS_RET, ""},
+    {INS_CALL, "s"},
+    {INS_JMP, "iu"},
+    {INS_JMPEQ, "iu"},
+    {INS_JMPNEQ, "iu"},
+    {INS_CALLASYNC, "s"},
+    {INS_UNKNOWN30, "s"},
+    {INS_STACKALLOC, "u"},
+    {INS_PUSH, "i"},
+    {INS_SET, "i"},
+    {INS_DECI, "i"}
+};
+
+ecli_result_t
+get_ins_params(th10_instr_t* ins, ecl_value_t* values)
+{
+    for(unsigned int i = 0; i < sizeof(instruction_formats) / sizeof(ins_format_t); i++) {
+        if(instruction_formats[i].id == ins->id) {
+            return value_get_parameters(values, instruction_formats[i].format, &ins->data[0]);
+        }
+    }
+    return ECLI_FAILURE;
+}
+
 void
 print_th10_instruction_raw(th10_instr_t* ins)
 {
@@ -47,6 +80,8 @@ void
 print_th10_instruction(th10_instr_t* ins)
 {
     uint8_t rank_mask = ins->rank_mask & 0x0F;
+    static ecl_value_t params[32];
+
     if(rank_mask != last_mask) {
         putchar('!');
         if(rank_mask == 0x0F) {
@@ -68,31 +103,28 @@ print_th10_instruction(th10_instr_t* ins)
     for(unsigned int i = 0; i < amt; i++) {
         putchar(' ');
     }
+     
+    get_ins_params(ins, params);
 
     switch(ins->id) {
-        case 10: {
+        case INS_RET: {
             printf("return");
         }   break;
-        case 11: {
-            char* name = &ins->data[4];
+        case INS_CALL: {
+            char* name = params[0].s;
             printf("call(\"%s\")", name);
         }   break;
-        case 12: {
-            int32_t offset = *(int32_t*)&ins->data[0];
-            uint32_t at_time = *(uint32_t*)&ins->data[4];
-            printf("goto %d @ %u", offset, at_time);
+        case INS_JMP: {
+            printf("goto %d @ %u", params[0].i, params[1].u);
         }   break;
-        case 13: {
-            int32_t offset = *(int32_t*)&ins->data[0];
-            uint32_t at_time = *(uint32_t*)&ins->data[4];
-            printf("jmpEq(%d, %u)", offset, at_time);
+        case INS_JMPEQ: {
+            printf("jmpEq(%d, %u)", params[0].i, params[1].u);
         }   break;
-        case 30: {
-            char* s = &ins->data[4];
-            printf("unknown30(\"%s\")", s);
+        case INS_UNKNOWN30: {
+            printf("unknown30(\"%s\")", params[0].s);
         }   break;
-        case 40: {
-            uint32_t amt = (*(uint32_t*)&ins->data[0]) >> 2;
+        case INS_STACKALLOC: {
+            uint32_t amt = params[0].u >> 2;
             if(amt > 0) {
                 printf("var A");
                 for(unsigned int i = 1; i < amt; i++) {
@@ -102,8 +134,8 @@ print_th10_instruction(th10_instr_t* ins)
                 printf("stackAlloc(%d)", amt);
             }
         }   break;
-        case 42: {
-            uint32_t value = *(uint32_t*)&ins->data[0];
+        case INS_PUSH: {
+            int32_t value = params[0].i;
             printf("push(");
             if(ins->param_mask & 1) {
                 printf("$%c", 'A' + (value >> 2));
@@ -112,8 +144,8 @@ print_th10_instruction(th10_instr_t* ins)
             }
             putchar(')');
         }   break;
-        case 43: {
-            uint32_t value = *(uint32_t*)&ins->data[0];
+        case INS_SET: {
+            int32_t value = params[0].i;
             printf("set(");
             if(ins->param_mask & 1) {
                 printf("$%c", 'A' + (value >> 2));
@@ -123,10 +155,11 @@ print_th10_instruction(th10_instr_t* ins)
             putchar(')');
             break;
         }
-        case 78: {
-            uint32_t var = *(uint32_t*)&ins->data[0];
-            printf("deci($%c)", 'A' + (var >> 2));
+        case INS_DECI: {
+            uint32_t var = params[0].u >> 2;
+            printf("deci($%c)", 'A' + var);
         }   break;
+
         default:
             printf("ins_%d()", ins->id);
             break;
