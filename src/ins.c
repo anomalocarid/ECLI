@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+static uint8_t last_mask = 0x0F;
+
 void
 print_th10_instruction_raw(th10_instr_t* ins)
 {
@@ -40,8 +42,6 @@ print_th10_instruction_raw(th10_instr_t* ins)
     printf("param_mask: %d, rank_mask: %x, param_count: %d\n",
            ins->param_mask, ins->rank_mask, ins->param_count);
 }
-
-static uint8_t last_mask = 0x0F;
 
 void
 print_th10_instruction(th10_instr_t* ins)
@@ -77,6 +77,16 @@ print_th10_instruction(th10_instr_t* ins)
             char* name = &ins->data[4];
             printf("call(\"%s\")", name);
         }   break;
+        case 12: {
+            int32_t offset = *(int32_t*)&ins->data[0];
+            uint32_t at_time = *(uint32_t*)&ins->data[4];
+            printf("goto %d @ %u", offset, at_time);
+        }   break;
+        case 13: {
+            int32_t offset = *(int32_t*)&ins->data[0];
+            uint32_t at_time = *(uint32_t*)&ins->data[4];
+            printf("jmpEq(%d, %u)", offset, at_time);
+        }   break;
         case 30: {
             char* s = &ins->data[4];
             printf("unknown30(\"%s\")", s);
@@ -94,13 +104,29 @@ print_th10_instruction(th10_instr_t* ins)
         }   break;
         case 42: {
             uint32_t value = *(uint32_t*)&ins->data[0];
-            printf("push(%d)", value);
+            printf("push(");
+            if(ins->param_mask & 1) {
+                printf("$%c", 'A' + (value >> 2));
+            } else {
+                printf("%d", value);
+            }
+            putchar(')');
         }   break;
         case 43: {
             uint32_t value = *(uint32_t*)&ins->data[0];
-            printf("set(%d)", value);
+            printf("set(");
+            if(ins->param_mask & 1) {
+                printf("$%c", 'A' + (value >> 2));
+            } else {
+                printf("%d", value);
+            }
+            putchar(')');
             break;
         }
+        case 78: {
+            uint32_t var = *(uint32_t*)&ins->data[0];
+            printf("deci($%c)", 'A' + (var >> 2));
+        }   break;
         default:
             printf("ins_%d()", ins->id);
             break;

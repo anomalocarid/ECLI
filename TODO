@@ -4,3 +4,4 @@
 * Support for time labels (frames)
 * Use binary search for finding subs by name
 * Support for ECL local/global variables
+* Better ECL instruction parameter handling

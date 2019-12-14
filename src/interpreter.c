@@ -104,6 +104,33 @@ run_th10_instruction(ecl_state_t* state)
             next = sub->start;
         }   break;
         
+        case 12: { // jmp (unconditional goto)
+            int32_t offset = *(int32_t*)&ins->data[0];
+            uint32_t at_time = *(uint32_t*)&ins->data[4];
+            
+            next = (th10_instr_t*)(((uint8_t*)ins) + offset);
+        }   break;
+        
+        case 13: { // jmpEq
+            if(popi(state) == 0) {
+                int32_t offset = *(int32_t*)&ins->data[0];
+                uint32_t at_time = *(uint32_t*)&ins->data[4];
+                
+                next = (th10_instr_t*)(((uint8_t*)ins) + offset);
+            }
+        }   break;
+        
+        case 21: { // unknown21 - use it to print the top of the stack
+            if(state->sp > 0) {
+                ecl_value_t* val = &state->stack[state->sp-1];
+                if(val->type == ECL_INT) {
+                    printf("%d\n", val->i);
+                } else if(val->type == ECL_FLOAT) {
+                    printf("%f\n", val->f);
+                }
+            }
+        }   break;
+        
         case 23: { // wait 
             uint32_t amt = geti(state, 0);
             // TODO: actually wait
@@ -132,6 +159,14 @@ run_th10_instruction(ecl_state_t* state)
             uint32_t var = *(uint32_t*)&ins->data[0];
             state->stack[state->bp+var].type = ECL_INT;
             state->stack[state->bp+var].i = popi(state);
+        }   break;
+        
+        case 78: { // deci
+            uint32_t var = *(uint32_t*)&ins->data[0];
+            int32_t value = getvi(state, var);
+            pushi(state, value);
+            state->stack[state->bp+var].type = ECL_INT;
+            state->stack[state->bp+var].i = value - 1;
         }   break;
         
         case 502: { // flagSet
