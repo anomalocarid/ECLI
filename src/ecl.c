@@ -205,9 +205,20 @@ th10_ecl_get_include(th10_include_list_t* list, unsigned int idx)
 th10_ecl_sub_t*
 get_th10_ecl_sub_by_name(th10_ecl_t* ecl, const char* name)
 {
-    for(unsigned int i = 0; i < ecl->header->sub_count; i++) {
-        if(strcmp(ecl->subs[i].name, name) == 0) {
-            return &ecl->subs[i];
+    //Binary search
+    unsigned int left = 0;
+    unsigned int right = ecl->header->sub_count-1;
+    
+    while(right >= left) {
+        unsigned int mid = left + ((right - left) >> 1);
+        
+        int res = strcmp(name, ecl->subs[mid].name);
+        if(res == 0) {
+            return &ecl->subs[mid];
+        } else if(res < 0) { // name < this sub's name
+            right = mid - 1;
+        } else {
+            left = mid + 1;
         }
     }
     
