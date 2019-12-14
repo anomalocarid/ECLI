@@ -130,3 +130,33 @@ arg_get_param()
 {
     return param;
 }
+
+// Print usage/help string 
+void
+arg_print_usage(const char* description, const char* pos, param_t* params, const char* long_description)
+{
+    printf("%s: %s\n", argv[0], description);
+    printf("Usage: %s", argv[0]);
+    for(param_t* p = &params[0]; p->shortname != 0; p++) {
+        printf(" [-%c]", p->shortname);
+    }
+    
+    if(pos) {
+        printf(" %s", pos);
+    }
+    
+    printf("\n\nCommand-line arguments:\n");
+    for(param_t* p = &params[0]; p->shortname != 0; p++) {
+        printf("-%c", p->shortname);
+        if(p->longname) {
+            printf(",--%s", p->longname);
+        }
+        if(p->has_arg) {
+            printf(" arg");
+        }
+        if(p->desc) {
+            printf("\t\t%s", p->desc);
+        }
+        putchar('\n');
+    }
+}

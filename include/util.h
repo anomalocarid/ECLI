@@ -52,5 +52,5 @@ typedef struct {
 extern void args_set(int _argc, char** _argv);
 extern int arg_get(param_t* params);
 extern const char* arg_get_param();
-
+extern void arg_print_usage(const char* description, const char* pos, param_t* params, const char* long_description);
 #endif

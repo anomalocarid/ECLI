@@ -14,6 +14,9 @@ param_t params[] = {
     {0, NULL, NULL, 0, NULL}
 };
 
+const char* desc = "ECL Interpreter for the newest Touhou games";
+const char* pos = "eclfile";
+
 int
 main(int argc, char** argv)
 {
@@ -30,6 +33,7 @@ main(int argc, char** argv)
                 break;
 
             case 'h':
+                arg_print_usage(desc, pos, params, NULL);
                 return EXIT_SUCCESS;
                 break;
 

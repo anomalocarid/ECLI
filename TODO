@@ -3,5 +3,5 @@
 * Support for multiple ECL instances (to allow async subs)
 * Support for time labels (frames)
 * Support for difficulty/rank masks
-* Command line argument parsing
 * Use binary search for finding subs by name
+* Support for ECL local/global variables
