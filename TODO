@@ -2,6 +2,5 @@
 * Ability to step through an ECL file instruction by instruction
 * Support for multiple ECL instances (to allow async subs)
 * Support for time labels (frames)
-* Support for difficulty/rank masks
 * Use binary search for finding subs by name
 * Support for ECL local/global variables

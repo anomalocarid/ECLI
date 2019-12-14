@@ -8,6 +8,7 @@ static int verbose;
 
 param_t params[] = {
     {'h', "help", NULL, 0, "Print this message."},
+    {'d', "difficulty", NULL, 1, "Set the difficulty (easy, normal, hard, lunatic)"},
     {'H', "dump-header", &show_header, 0, "Dump the ECL header."},
     {'I', "dump-includes", &show_includes, 0, "Dump the ECL ANIM/ECLI includes."},
     {'v', "verbose", &verbose, 0, "Print a lot of useful debug information."},
@@ -16,6 +17,7 @@ param_t params[] = {
 
 const char* desc = "ECL Interpreter for the newest Touhou games";
 const char* pos = "eclfile";
+const char* longdesc = NULL;
 
 int
 main(int argc, char** argv)
@@ -24,16 +26,34 @@ main(int argc, char** argv)
     args_set(argc, argv);
     const char* fname = NULL;
     int c;
+    unsigned int difficulty = DIFF_LUNATIC;
 
     while((c = arg_get(params)) != 0) {
         fflush(stdout);
         switch(c) {
             case -1:
+                arg_print_usage(desc, pos, params, longdesc);
                 return EXIT_FAILURE;
                 break;
+            // difficulty setting
+            case 'd': {
+                const char* arg = arg_get_param();
+                if(strcmp(arg, "easy") == 0) {
+                    difficulty = DIFF_EASY;
+                } else if(strcmp(arg, "normal") == 0) {
+                    difficulty = DIFF_NORMAL;
+                } else if(strcmp(arg, "hard") == 0) {
+                    difficulty = DIFF_HARD;
+                } else if(strcmp(arg, "lunatic") == 0) {
+                    difficulty = DIFF_LUNATIC;
+                } else {
+                    fprintf(stderr, "Unknown difficulty: %s\n\n", arg);
+                    arg_print_usage(desc, pos, params, longdesc);
+                }
+            }   break;
 
             case 'h':
-                arg_print_usage(desc, pos, params, NULL);
+                arg_print_usage(desc, pos, params, longdesc);
                 return EXIT_SUCCESS;
                 break;
 
@@ -110,12 +130,13 @@ main(int argc, char** argv)
     
     /* Initialize interpreter */
     ecl_state_t state;
-    result = initialize_ecl_state(&state, &ecl, 2048);
+    result = initialize_ecl_state(&state, &ecl);
     if(result != ECLI_SUCCESS) {
         fprintf(stderr, "Failed to initialize interpreter state.\n");
         free_th10_ecl(&ecl);
         return EXIT_FAILURE;
     }
+    state.difficulty = difficulty;
     
     /* Find main sub and execute */
     th10_ecl_sub_t* sub = get_th10_ecl_sub_by_name(&ecl, "main");

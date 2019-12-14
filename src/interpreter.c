@@ -75,6 +75,10 @@ run_th10_instruction(ecl_state_t* state)
     ecli_result_t retval = ECLI_SUCCESS;
     th10_instr_t* ins = state->ip;
     th10_instr_t* next = (th10_instr_t*)(((uint8_t*)ins) + ins->size);
+    if(!(state->difficulty & ins->rank_mask)) {
+        state->ip = next;
+        return ECLI_SUCCESS;
+    }
 
     switch(ins->id) {
         case 10: // return

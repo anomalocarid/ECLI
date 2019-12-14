@@ -30,20 +30,22 @@
  **/
 #include "ecli.h"
 
+#define STACK_SIZE 1024
+
 /**
  * Initialize the ECL interpreter state
  **/
 ecli_result_t 
-initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl, unsigned int stack_size)
+initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl)
 {
     memset(state, 0, sizeof(ecl_state_t));
-    state->stack_size = stack_size;
+    state->stack_size = STACK_SIZE;
     state->ecl = ecl;
-    state->stack = xmalloc(sizeof(ecl_value_t)*stack_size);
-    state->callstack = xmalloc(sizeof(th10_instr_t*)*stack_size);
+    state->stack = xmalloc(sizeof(ecl_value_t)*STACK_SIZE);
+    state->callstack = xmalloc(sizeof(th10_instr_t*)*STACK_SIZE);
     
-    memset(state->stack, 0, sizeof(ecl_value_t)*stack_size);
-    memset(state->callstack, 0, sizeof(th10_instr_t*)*stack_size);
+    memset(state->stack, 0, sizeof(ecl_value_t)*STACK_SIZE);
+    memset(state->callstack, 0, sizeof(th10_instr_t*)*STACK_SIZE);
     
     return ECLI_SUCCESS;
 }

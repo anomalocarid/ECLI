@@ -49,7 +49,7 @@ print_th10_instruction(th10_instr_t* ins)
     uint8_t rank_mask = ins->rank_mask & 0x0F;
     if(rank_mask != last_mask) {
         putchar('!');
-        if(rank_mask) {
+        if(rank_mask == 0x0F) {
             putchar('*');
         } else {
             if(rank_mask & 0x08) putchar('L');

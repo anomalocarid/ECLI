@@ -47,6 +47,13 @@ typedef struct {
     };
 } ecl_value_t;
 
+enum {
+    DIFF_EASY=1,
+    DIFF_NORMAL=2,
+    DIFF_HARD=4,
+    DIFF_LUNATIC=8
+};
+
 typedef struct {
     // Data stack
     size_t stack_size;
@@ -61,12 +68,13 @@ typedef struct {
     th10_instr_t* ip; // Instruction pointer
     
     //Internal state
+    uint8_t difficulty;
     uint32_t flags;
     uint32_t chapter;
 } ecl_state_t;
 
 /* state.c */
-extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl, unsigned int stack_size);
+extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl);
 extern void free_ecl_state(ecl_state_t* state);
 
 /* interpreter.c */
