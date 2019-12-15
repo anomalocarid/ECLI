@@ -71,3 +71,22 @@ value_get_parameters(ecl_value_t* values, const char* format, uint8_t* data)
     
     return ECLI_SUCCESS;
 }
+
+void
+value_print(ecl_value_t* v)
+{
+    switch(v->type) {
+        case ECL_INT32:
+            printf("%d", v->i);
+            break;
+        case ECL_UINT32:
+            printf("%u", v->u);
+            break;
+        case ECL_FLOAT32:
+            printf("%ff", v->f);
+            break;
+        case ECL_STRING:
+            printf("\"%s\"", v->s);
+            break;
+    }
+}

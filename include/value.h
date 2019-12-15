@@ -53,5 +53,6 @@ typedef struct {
 } ecl_value_t;
 
 extern ecli_result_t value_get_parameters(ecl_value_t* values, const char* format, uint8_t* data);
+extern void value_print(ecl_value_t* v);
 
 #endif

@@ -39,28 +39,29 @@ static uint8_t last_mask = 0x0F;
 typedef struct {
     uint16_t id;
     const char* format;
+    const char* opcode;
 } ins_format_t;
 
 static const ins_format_t instruction_formats[] = {
     //system instructions
-    {INS_NOP, ""},
-    {INS_DELETE, ""},
-    {INS_RET, ""},
-    {INS_CALL, "s"},
-    {INS_JMP, "iu"},
-    {INS_JMPEQ, "iu"},
-    {INS_JMPNEQ, "iu"},
-    {INS_CALLASYNC, "s"},
-    {INS_UNKNOWN21, ""},
-    {INS_WAIT, "i"},
-    {INS_UNKNOWN30, "s"},
-    {INS_STACKALLOC, "u"},
-    {INS_PUSH, "i"},
-    {INS_SET, "i"},
-    {INS_DECI, "i"},
+    {INS_NOP, "", "nop"},
+    {INS_DELETE, "", "delete"},
+    {INS_RET, "", "return"},
+    {INS_CALL, "s", "call"},
+    {INS_JMP, "iu", "jmp"},
+    {INS_JMPEQ, "iu", "jmpEq"},
+    {INS_JMPNEQ, "iu", "jmpNeq"},
+    {INS_CALLASYNC, "s", "callAsync"},
+    {INS_UNKNOWN21, "", "unknown21"},
+    {INS_WAIT, "i", "wait"},
+    {INS_UNKNOWN30, "s", "unknown30"},
+    {INS_STACKALLOC, "u", "stackAlloc"},
+    {INS_PUSH, "i", "push"},
+    {INS_SET, "i", "set"},
+    {INS_DECI, "i", "deci"},
     // Enemy property management and other miscellaneous things
-    {INS_FLAGSET, "i"},
-    {INS_SETCHAPTER, "i"}
+    {INS_FLAGSET, "i", "flagSet"},
+    {INS_SETCHAPTER, "i", "setChapter"}
 };
 
 ecli_result_t
@@ -85,12 +86,29 @@ print_th10_instruction_raw(th10_instr_t* ins)
            ins->param_mask, ins->rank_mask, ins->param_count);
 }
 
+static void
+print_param(ecl_value_t* params, unsigned int i, uint16_t mask)
+{
+    if(mask & (1 << i)) {
+        if(params[i].type == ECL_FLOAT32) {
+            putchar('%');
+        } else if(params[i].type == ECL_INT32) {
+            putchar('$');
+        }
+        //TODO: handle global/local variable references
+        printf("%c", 'A' + params[i].i);
+    } else {
+        value_print(&params[i]);
+    }
+}
+
 void
 print_th10_instruction(th10_instr_t* ins)
 {
     uint8_t rank_mask = ins->rank_mask & 0x0F;
     static ecl_value_t params[32];
 
+    // Display difficulty options
     if(rank_mask != last_mask) {
         putchar('!');
         if(rank_mask == 0x0F) {
@@ -105,6 +123,7 @@ print_th10_instruction(th10_instr_t* ins)
         last_mask = rank_mask;
     }
 
+    // Time label
     int amt = 6;
     if(ins->time != 0) {
         amt -= printf("%d:", ins->time);
@@ -112,78 +131,26 @@ print_th10_instruction(th10_instr_t* ins)
     for(unsigned int i = 0; i < amt; i++) {
         putchar(' ');
     }
-     
-    get_ins_params(ins, params, NULL);
-
-    switch(ins->id) {
-        //system instructions
-        case INS_RET: {
-            printf("return");
-        }   break;
-        case INS_CALL: {
-            char* name = params[0].s;
-            printf("call(\"%s\")", name);
-        }   break;
-        case INS_JMP: {
-            printf("goto %d @ %u", params[0].i, params[1].u);
-        }   break;
-        case INS_JMPEQ: {
-            printf("jmpEq(%d, %u)", params[0].i, params[1].u);
-        }   break;
-        case INS_WAIT: {
-            printf("wait(%d)", params[0].u);
-        }   break;
-        case INS_UNKNOWN30: {
-            printf("unknown30(\"%s\")", params[0].s);
-        }   break;
-        case INS_STACKALLOC: {
-            uint32_t amt = params[0].u >> 2;
-            if(amt > 0) {
-                printf("var A");
-                for(unsigned int i = 1; i < amt; i++) {
-                    printf(", %c", 'A'+i);
-                }
-            } else {
-                printf("stackAlloc(%d)", amt);
-            }
-        }   break;
-        case INS_PUSH: {
-            int32_t value = params[0].i;
-            printf("push(");
-            if(ins->param_mask & 1) {
-                printf("$%c", 'A' + (value >> 2));
-            } else {
-                printf("%d", value);
-            }
-            putchar(')');
-        }   break;
-        case INS_SET: {
-            int32_t value = params[0].i;
-            printf("set(");
-            if(ins->param_mask & 1) {
-                printf("$%c", 'A' + (value >> 2));
-            } else {
-                printf("%d", value);
-            }
-            putchar(')');
-            break;
-        }
-        case INS_DECI: {
-            uint32_t var = params[0].u >> 2;
-            printf("deci($%c)", 'A' + var);
-        }   break;
-        // Enemy property management and other miscellaneous things
-        case INS_FLAGSET:
-            printf("flagSet(%d)", params[0].i);
-            break;
-        case INS_SETCHAPTER:
-            printf("setChapter(%d)", params[0].i);
-            break;
+    
+    for(unsigned int i = 0; i < sizeof(instruction_formats) / sizeof(ins_format_t); i++) {
+        if(instruction_formats[i].id == ins->id) {
+            printf("%s(", instruction_formats[i].opcode);
             
-        default:
-            printf("ins_%d()", ins->id);
-            break;
+            size_t num = strlen(instruction_formats[i].format);
+            ecli_result_t result = value_get_parameters(params, instruction_formats[i].format, &ins->data[0]);
+            // display parameter list
+            if(SUCCESS(result) && (num > 0)) {
+                print_param(params, 0, ins->param_mask);
+                for(unsigned int j = 1; j < num; j++) {
+                    printf(", ");
+                    print_param(params, j, ins->param_mask);
+                }
+            }
+            
+            printf(");\n");
+            return;
+        }
     }
-
-    printf(";\n");
+    
+    printf("ins_%d;\n", ins->id);
 }
