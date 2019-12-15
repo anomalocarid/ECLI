@@ -57,7 +57,10 @@ static const ins_format_t instruction_formats[] = {
     {INS_UNKNOWN30, "s", "unknown30"},
     {INS_STACKALLOC, "u", "stackAlloc"},
     {INS_PUSH, "i", "push"},
+    {INS_PUSHF, "f", "pushf"},
     {INS_SET, "i", "set"},
+    {INS_SETF, "f", "setf"},
+    {INS_ADDF, "", "addf"},
     {INS_DECI, "i", "deci"},
     // Enemy property management and other miscellaneous things
     {INS_FLAGSET, "i", "flagSet"},
@@ -96,7 +99,7 @@ print_param(ecl_value_t* params, unsigned int i, uint16_t mask)
             putchar('$');
         }
         //TODO: handle global/local variable references
-        printf("%c", 'A' + params[i].i);
+        printf("%c", 'A' + (params[i].i >> 2));
     } else {
         value_print(&params[i]);
     }
@@ -134,20 +137,22 @@ print_th10_instruction(th10_instr_t* ins)
     
     for(unsigned int i = 0; i < sizeof(instruction_formats) / sizeof(ins_format_t); i++) {
         if(instruction_formats[i].id == ins->id) {
-            printf("%s(", instruction_formats[i].opcode);
+            printf("%s", instruction_formats[i].opcode);
             
             size_t num = strlen(instruction_formats[i].format);
             ecli_result_t result = value_get_parameters(params, instruction_formats[i].format, &ins->data[0]);
             // display parameter list
             if(SUCCESS(result) && (num > 0)) {
+                putchar('(');
                 print_param(params, 0, ins->param_mask);
                 for(unsigned int j = 1; j < num; j++) {
                     printf(", ");
                     print_param(params, j, ins->param_mask);
                 }
+                putchar(')');
             }
             
-            printf(");\n");
+            printf(";\n");
             return;
         }
     }

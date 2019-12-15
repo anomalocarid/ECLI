@@ -62,7 +62,12 @@ typedef struct {
 /* state.c */
 extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl);
 extern void free_ecl_state(ecl_state_t* state);
+
 extern ecli_result_t state_setup_frame(ecl_state_t* state, uint32_t nvars);
+extern ecli_result_t state_push(ecl_state_t* state, ecl_value_t* value);
+extern ecl_value_t* state_pop(ecl_state_t* state);
+extern ecl_value_t* state_peek(ecl_state_t* state);
+
 extern ecli_result_t state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result);
 extern ecli_result_t state_set_variable(ecl_state_t* state, int32_t slot, ecl_value_t* value);
 

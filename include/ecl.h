@@ -31,8 +31,9 @@
 #ifndef __ECL_H__
 #define __ECL_H__
 
-#include "value.h"
 #include "config.h"
+#include "ins.h"
+#include "value.h"
 #include <stdio.h>
 #include <stdint.h>
 
@@ -59,26 +60,6 @@ PACK_BEGIN
     uint32_t zero2[4]; /* always zero */
 PACK_END
 } PACK_ATTRIBUTE th10_header_t;
-
-typedef struct {
-PACK_BEGIN
-    uint32_t time;
-    uint16_t id;
-    uint16_t size;
-    uint16_t param_mask;
-    /* The rank bitmask.
-     *   1111LHNE
-     * Bits mean: easy, normal, hard, lunatic. The rest are always set to 1. */
-    uint8_t rank_mask;
-    /* There doesn't seem to be a way of telling how many parameters there are
-     * from the additional data. */
-    uint8_t param_count;
-    /* From TH13 on, this field stores the number of current stack references
-     * in the parameter list. */
-    uint32_t zero;
-    unsigned char data[];
-PACK_END
-} PACK_ATTRIBUTE th10_instr_t;
 
 typedef struct {
 PACK_BEGIN

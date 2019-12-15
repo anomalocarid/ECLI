@@ -31,6 +31,9 @@
 #ifndef __ECLI_INS_H__
 #define __ECLI_INS_H__
 
+#include "config.h"
+#include <stdint.h>
+
 //th17 ins IDs
 typedef enum {
     //system instructions
@@ -48,6 +51,9 @@ typedef enum {
     INS_STACKALLOC=40,
     INS_PUSH=42,
     INS_SET=43,
+    INS_PUSHF=44,
+    INS_SETF=45,
+    INS_ADDF=51,
     INS_DECI=78,
     // Enemy property management and other miscellaneous things
     INS_FLAGSET=502,
@@ -55,5 +61,25 @@ typedef enum {
     
     INS_INVALID=0xFFFF
 } ecl_ins_id;
+
+typedef struct {
+PACK_BEGIN
+    uint32_t time;
+    uint16_t id;
+    uint16_t size;
+    uint16_t param_mask;
+    /* The rank bitmask.
+     *   1111LHNE
+     * Bits mean: easy, normal, hard, lunatic. The rest are always set to 1. */
+    uint8_t rank_mask;
+    /* There doesn't seem to be a way of telling how many parameters there are
+     * from the additional data. */
+    uint8_t param_count;
+    /* From TH13 on, this field stores the number of current stack references
+     * in the parameter list. */
+    uint32_t zero;
+    unsigned char data[];
+PACK_END
+} PACK_ATTRIBUTE th10_instr_t;
 
 #endif

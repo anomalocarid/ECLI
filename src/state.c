@@ -79,10 +79,29 @@ state_setup_frame(ecl_state_t* state, uint32_t nvars)
 }
 
 ecli_result_t
+state_push(ecl_state_t* state, ecl_value_t* value)
+{
+    state->stack[state->sp++] = *value;
+    return ECLI_SUCCESS;
+}
+
+ecl_value_t*
+state_pop(ecl_state_t* state)
+{
+    return &state->stack[--state->sp];
+}
+
+ecl_value_t*
+state_peek(ecl_state_t* state)
+{
+    return &state->stack[state->sp - 1];
+}
+
+ecli_result_t
 state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result)
 {
     if(slot >= 0) { // stack
-        ecl_value_t* v = &state->stack[state->bp + slot];
+        ecl_value_t* v = &state->stack[state->bp + (slot >> 2)];
         result->type = v->type;
 
         switch(v->type) {
@@ -105,6 +124,7 @@ ecli_result_t
 state_set_variable(ecl_state_t* state, int32_t slot, ecl_value_t* value)
 {
     if(slot >= 0) { // stack
+        slot = slot >> 2;
         ecl_value_t* v = &state->stack[state->bp + slot];
         v->type = value->type;
         
