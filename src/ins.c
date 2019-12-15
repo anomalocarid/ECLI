@@ -42,6 +42,7 @@ typedef struct {
 } ins_format_t;
 
 static const ins_format_t instruction_formats[] = {
+    //system instructions
     {INS_NOP, ""},
     {INS_DELETE, ""},
     {INS_RET, ""},
@@ -50,18 +51,26 @@ static const ins_format_t instruction_formats[] = {
     {INS_JMPEQ, "iu"},
     {INS_JMPNEQ, "iu"},
     {INS_CALLASYNC, "s"},
+    {INS_UNKNOWN21, ""},
+    {INS_WAIT, "i"},
     {INS_UNKNOWN30, "s"},
     {INS_STACKALLOC, "u"},
     {INS_PUSH, "i"},
     {INS_SET, "i"},
-    {INS_DECI, "i"}
+    {INS_DECI, "i"},
+    // Enemy property management and other miscellaneous things
+    {INS_FLAGSET, "i"},
+    {INS_SETCHAPTER, "i"}
 };
 
 ecli_result_t
-get_ins_params(th10_instr_t* ins, ecl_value_t* values)
+get_ins_params(th10_instr_t* ins, ecl_value_t* values, unsigned int* num)
 {
     for(unsigned int i = 0; i < sizeof(instruction_formats) / sizeof(ins_format_t); i++) {
         if(instruction_formats[i].id == ins->id) {
+            if(num) {
+                *num = strlen(instruction_formats[i].format);
+            }
             return value_get_parameters(values, instruction_formats[i].format, &ins->data[0]);
         }
     }
@@ -104,9 +113,10 @@ print_th10_instruction(th10_instr_t* ins)
         putchar(' ');
     }
      
-    get_ins_params(ins, params);
+    get_ins_params(ins, params, NULL);
 
     switch(ins->id) {
+        //system instructions
         case INS_RET: {
             printf("return");
         }   break;
@@ -119,6 +129,9 @@ print_th10_instruction(th10_instr_t* ins)
         }   break;
         case INS_JMPEQ: {
             printf("jmpEq(%d, %u)", params[0].i, params[1].u);
+        }   break;
+        case INS_WAIT: {
+            printf("wait(%d)", params[0].u);
         }   break;
         case INS_UNKNOWN30: {
             printf("unknown30(\"%s\")", params[0].s);
@@ -159,7 +172,14 @@ print_th10_instruction(th10_instr_t* ins)
             uint32_t var = params[0].u >> 2;
             printf("deci($%c)", 'A' + var);
         }   break;
-
+        // Enemy property management and other miscellaneous things
+        case INS_FLAGSET:
+            printf("flagSet(%d)", params[0].i);
+            break;
+        case INS_SETCHAPTER:
+            printf("setChapter(%d)", params[0].i);
+            break;
+            
         default:
             printf("ins_%d()", ins->id);
             break;

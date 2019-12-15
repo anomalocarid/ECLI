@@ -73,7 +73,12 @@ ecli_result_t
 run_th10_instruction(ecl_state_t* state)
 {
     static ecl_value_t params[32];
+    static ecl_value_t values[32];
+    ecl_value_t value;
+    unsigned int nparam;
+    
     ecli_result_t retval = ECLI_SUCCESS;
+    
     th10_instr_t* ins = state->ip;
     th10_instr_t* next = (th10_instr_t*)(((uint8_t*)ins) + ins->size);
 
@@ -82,12 +87,25 @@ run_th10_instruction(ecl_state_t* state)
         return ECLI_SUCCESS;
     }
     
-    retval = get_ins_params(ins, params);
+    retval = get_ins_params(ins, params, &nparam);
 
     if(!SUCCESS(retval)) {
         return retval;
     }
+    
+    // Replace variable references with the corresponding values
+    for(unsigned int i = 0; i < nparam; i++) {
+        if(ins->param_mask & (1 << i)) {
+            retval = state_get_variable(state, params[i].i, &values[i]);
+            if(!SUCCESS(retval)) {
+                return retval;
+            }
+        } else {
+            values[i] = params[i];
+        }
+    }
 
+    // Execute the instruction
     switch(ins->id) {
         case INS_RET: // return
             state->sp = state->bp;
@@ -135,18 +153,16 @@ run_th10_instruction(ecl_state_t* state)
         }   break;
         
         case INS_WAIT: { // wait 
-            int32_t amt = params[0].i;
+            int32_t amt = values[0].i;
             // TODO: actually wait
         }   break;
         
         case INS_UNKNOWN30: { // unknown30 - we're using this as a string print statement
-            printf("%s\n", params[0].s);
+            printf("%s\n", values[0].s);
         }   break;
 
         case INS_STACKALLOC: { // stackAlloc
-            pushi(state, state->bp);
-            state->bp = state->sp;
-            state->sp += params[0].u >> 2;
+            retval = state_setup_frame(state, params[0].u >> 2);
         }   break;
 
         case INS_PUSH: { // push
@@ -154,24 +170,25 @@ run_th10_instruction(ecl_state_t* state)
         }   break;
 
         case INS_SET: { // set
-            state->stack[state->bp + params[0].i].type = ECL_INT32;
-            state->stack[state->bp + params[0].i].i = popi(state);
+            value.type = ECL_INT32;
+            value.i = popi(state);
+            retval = state_set_variable(state, params[0].i, &value);
         }   break;
         
         case INS_DECI: { // deci
-            int32_t value = getvi(state, params[0].i);
-            pushi(state, value);
-            state->stack[state->bp + params[0].i].type = ECL_INT32;
-            state->stack[state->bp + params[0].i].i = value - 1;
+            pushi(state, values[0].i);
+            value.type = ECL_INT32;
+            value.i = values[0].i - 1;
+            retval = state_set_variable(state, params[0].i, &value);
         }   break;
         
         case 502: { // flagSet
-            state->flags = geti(state, 0);
+            state->flags = values[0].i;
             break;
         }
         
         case 524: { // setChapter
-            state->chapter = geti(state, 0);
+            state->chapter = values[0].i;
         }   break;
         
         default:

@@ -49,7 +49,10 @@ typedef enum {
     INS_PUSH=42,
     INS_SET=43,
     INS_DECI=78,
-
+    // Enemy property management and other miscellaneous things
+    INS_FLAGSET=502,
+    INS_SETCHAPTER=524,
+    
     INS_INVALID=0xFFFF
 } ecl_ins_id;
 

@@ -60,3 +60,66 @@ free_ecl_state(ecl_state_t* state)
     xfree(state->callstack);
     memset(state, 0, sizeof(ecl_state_t));
 }
+
+/**
+ * Setup a stack frame
+ **/
+ecli_result_t
+state_setup_frame(ecl_state_t* state, uint32_t nvars)
+{
+    state->stack[state->sp].type = ECL_UINT32;
+    state->stack[state->sp++].u = state->bp;
+    state->bp = state->sp;
+    state->sp += nvars;
+    for(unsigned int i = 0; i < nvars; i++) {
+        state->stack[state->bp + i].type = ECL_INT32;
+    }
+    
+    return ECLI_SUCCESS;
+}
+
+ecli_result_t
+state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result)
+{
+    if(slot >= 0) { // stack
+        ecl_value_t* v = &state->stack[state->bp + slot];
+        result->type = v->type;
+
+        switch(v->type) {
+            case ECL_INT32:
+                result->i = v->i;
+                break;
+            case ECL_FLOAT32:
+                result->f = v->f;
+                break;
+            default:
+                return ECLI_FAILURE; // unsupported type
+                break;
+        }
+    } else { // global/local
+    }
+    return ECLI_SUCCESS;
+}
+
+ecli_result_t
+state_set_variable(ecl_state_t* state, int32_t slot, ecl_value_t* value)
+{
+    if(slot >= 0) { // stack
+        ecl_value_t* v = &state->stack[state->bp + slot];
+        v->type = value->type;
+        
+        switch(v->type) {
+            case ECL_INT32:
+                v->i = value->i;
+                break;
+            case ECL_FLOAT32:
+                v->f = value->f;
+                break;
+            default:
+                return ECLI_FAILURE;
+                break;
+        }
+    } else { // global/local
+    }
+    return ECLI_SUCCESS;
+}
