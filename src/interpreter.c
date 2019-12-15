@@ -62,7 +62,8 @@ run_th10_instruction(ecl_state_t* state)
     // Replace variable references with the corresponding values
     for(unsigned int i = 0; i < nparam; i++) {
         if(ins->param_mask & (1 << i)) {
-            retval = state_get_variable(state, params[i].i, &values[i]);
+            int32_t slot = (params[i].type == ECL_FLOAT32) ? (int32_t)params[i].f : params[i].i;
+            retval = state_get_variable(state, slot, &values[i]);
             if(!SUCCESS(retval)) {
                 return retval;
             }
@@ -110,7 +111,7 @@ run_th10_instruction(ecl_state_t* state)
         
         case INS_UNKNOWN21: { // unknown21 - use it to print the top of the stack
             if(state->sp > 0) {
-                ecl_value_t* val = &state->stack[state->sp-1];
+                ecl_value_t* val = state_pop(state);
                 if(val->type == ECL_INT32) {
                     printf("%d\n", val->i);
                 } else if(val->type == ECL_FLOAT32) {
@@ -149,6 +150,13 @@ run_th10_instruction(ecl_state_t* state)
             retval = state_set_variable(state, params[0].i, value);
         }   break;
         
+        case INS_ADDI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->i += value->i;
+            top->type = ECL_INT32;
+        }   break;
+
         case INS_ADDF: {
             value = state_pop(state);
             ecl_value_t* top = state_peek(state);

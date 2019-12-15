@@ -46,10 +46,12 @@ typedef struct {
     uint32_t sp; // Stack pointer
     uint32_t bp; // Base pointer
     ecl_value_t* stack;
+
     // Call stack
     th10_instr_t** callstack;
     uint32_t csp;
     
+    // Extra information used
     th10_ecl_t* ecl; // ECL data
     th10_instr_t* ip; // Instruction pointer
     
@@ -61,6 +63,7 @@ typedef struct {
 
 /* state.c */
 extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl);
+extern ecli_result_t initialize_globals();
 extern void free_ecl_state(ecl_state_t* state);
 
 extern ecli_result_t state_setup_frame(ecl_state_t* state, uint32_t nvars);

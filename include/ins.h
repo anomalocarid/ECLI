@@ -53,6 +53,7 @@ typedef enum {
     INS_SET=43,
     INS_PUSHF=44,
     INS_SETF=45,
+    INS_ADDI=50,
     INS_ADDF=51,
     INS_DECI=78,
     // Enemy property management and other miscellaneous things

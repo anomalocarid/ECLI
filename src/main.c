@@ -129,6 +129,12 @@ main(int argc, char** argv)
     }
     
     /* Initialize interpreter */
+    if(!SUCCESS(initialize_globals())) {
+        fprintf(stderr, "Failed to initialize global variables.\n");
+        free_th10_ecl(&ecl);
+        return EXIT_FAILURE;
+    }
+
     ecl_state_t state;
     result = initialize_ecl_state(&state, &ecl);
     if(result != ECLI_SUCCESS) {

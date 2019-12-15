@@ -60,11 +60,49 @@ static const ins_format_t instruction_formats[] = {
     {INS_PUSHF, "f", "pushf"},
     {INS_SET, "i", "set"},
     {INS_SETF, "f", "setf"},
+    {INS_ADDI, "", "addi"},
     {INS_ADDF, "", "addf"},
     {INS_DECI, "i", "deci"},
     // Enemy property management and other miscellaneous things
     {INS_FLAGSET, "i", "flagSet"},
     {INS_SETCHAPTER, "i", "setChapter"}
+};
+
+typedef struct {
+    int32_t id;
+    const char* name;
+} variable_format_t;
+
+static const variable_format_t variable_formats[] = {
+    {-10000, "RAND"},
+    {-9999, "RANDF"},
+    {-9998, "RANDRAD"},
+    {-9997, "FINAL_X"},
+    {-9996, "FINAL_Y"},
+    {-9995, "ABS_X"},
+    {-9994, "ABS_Y"},
+    {-9993, "REL_X"},
+    {-9992, "REL_Y"},
+    {-9991, "PLAYER_X"},
+    {-9990, "PLAYER_Y"},
+    {-9989, "ANGLE_PLAYER"},
+    {-9988, "TIME"},
+    {-9987, "RANDF2"},
+    {-9986, "TIMEOUT"},
+    {-9985, "I0"},
+    {-9984, "I1"},
+    {-9983, "I2"},
+    {-9982, "I3"},
+    {-9981, "F0"},
+    {-9980, "F1"},
+    {-9979, "F2"},
+    {-9978, "F3"},
+    {-9959, "DIFF"},
+    {-9953, "EASY"},
+    {-9952, "NORMAL"},
+    {-9951, "HARD"},
+    {-9950, "LUNATIC"},
+    {-9907, "SPELL_ID"}
 };
 
 ecli_result_t
@@ -98,8 +136,19 @@ print_param(ecl_value_t* params, unsigned int i, uint16_t mask)
         } else if(params[i].type == ECL_INT32) {
             putchar('$');
         }
-        //TODO: handle global/local variable references
-        printf("%c", 'A' + (params[i].i >> 2));
+        
+        if(params[i].i >= 0) { // stack
+            printf("%c", 'A' + (params[i].i >> 2));
+        } else { // local/global
+            int32_t id = (params[i].type == ECL_FLOAT32) ? (int32_t)params[i].f : params[i].i;
+            for(unsigned int i = 0; i < sizeof(variable_formats) / sizeof(variable_format_t); i++) {
+                if(id == variable_formats[i].id) {
+                    printf("%s", variable_formats[i].name);
+                    return;
+                }
+            }
+            printf("%d", id);
+        }
     } else {
         value_print(&params[i]);
     }

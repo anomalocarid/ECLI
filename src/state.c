@@ -32,6 +32,11 @@
 
 #define STACK_SIZE 1024
 
+// Global variables
+static ecl_value_t player_x;
+static ecl_value_t player_y;
+static ecl_value_t timeout;
+
 /**
  * Initialize the ECL interpreter state
  **/
@@ -46,6 +51,19 @@ initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl)
     
     memset(state->stack, 0, sizeof(ecl_value_t)*STACK_SIZE);
     memset(state->callstack, 0, sizeof(th10_instr_t*)*STACK_SIZE);
+    
+    return ECLI_SUCCESS;
+}
+
+/**
+ * Initialize global variables
+ **/
+ecli_result_t
+initialize_globals()
+{
+    player_x.type = ECL_FLOAT32; player_x.f = 0.0;
+    player_y.type = ECL_FLOAT32; player_y.f = 0.0;
+    timeout.type = ECL_INT32; timeout.i = 0;
     
     return ECLI_SUCCESS;
 }
@@ -78,6 +96,9 @@ state_setup_frame(ecl_state_t* state, uint32_t nvars)
     return ECLI_SUCCESS;
 }
 
+/**
+ * Push a value on the ECL stack
+ **/
 ecli_result_t
 state_push(ecl_state_t* state, ecl_value_t* value)
 {
@@ -85,12 +106,18 @@ state_push(ecl_state_t* state, ecl_value_t* value)
     return ECLI_SUCCESS;
 }
 
+/**
+ * Pop a value from the ECL stack
+ **/
 ecl_value_t*
 state_pop(ecl_state_t* state)
 {
     return &state->stack[--state->sp];
 }
 
+/**
+ * Peek a value from the top of the ECL stack
+ **/
 ecl_value_t*
 state_peek(ecl_state_t* state)
 {
@@ -116,6 +143,36 @@ state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result)
                 break;
         }
     } else { // global/local
+        switch(slot) {
+            case -9959: // DIFF
+                result->type = ECL_INT32;
+                result->i = 0;
+                if(state->difficulty == DIFF_EASY) { result->i = 0; }
+                if(state->difficulty == DIFF_NORMAL) { result->i = 1; }
+                if(state->difficulty == DIFF_HARD) { result->i = 2; }
+                if(state->difficulty == DIFF_LUNATIC) { result->i = 3; }
+                break;
+                
+            case -9953: // EASY
+                result->type = ECL_INT32;
+                result->i = (state->difficulty == DIFF_EASY) ? 1 : 0;
+                break;
+                
+            case -9952: // NORMAL
+                result->type = ECL_INT32;
+                result->i = (state->difficulty == DIFF_NORMAL) ? 1 : 0;
+                break;
+
+            case -9951: // HARD
+                result->type = ECL_INT32;
+                result->i = (state->difficulty == DIFF_HARD) ? 1 : 0;
+                break;
+            
+            case -9550: // LUNATIC
+                result->type = ECL_INT32;
+                result->i = (state->difficulty == DIFF_LUNATIC) ? 1 : 0;
+                break;
+        }
     }
     return ECLI_SUCCESS;
 }
