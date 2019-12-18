@@ -40,7 +40,7 @@ enum {
     DIFF_LUNATIC=8
 };
 
-typedef struct {
+typedef struct _ecl_state {
     // Data stack
     size_t stack_size;
     uint32_t sp; // Stack pointer
@@ -55,13 +55,29 @@ typedef struct {
     th10_ecl_t* ecl; // ECL data
     th10_instr_t* ip; // Instruction pointer
     
-    //Internal state
-    uint8_t difficulty;
+    // Internal state
     uint32_t flags;
-    uint32_t chapter;
+    int32_t wait; // frames to wait
+    uint32_t time;
+    
+    // For handling interpretation
+    struct _ecl_state* next;
 } ecl_state_t;
 
+// Global state shared amont *all* interpreters
+typedef struct {
+    float player_x;
+    float player_y;
+    int32_t timeout;
+    uint8_t difficulty;
+    uint32_t chapter;
+    int verbose;
+} ecl_global_state_t;
+
+extern ecl_global_state_t global;
+
 /* state.c */
+extern ecli_result_t allocate_ecl_state(ecl_state_t** statep, th10_ecl_t* ecl);
 extern ecli_result_t initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl);
 extern ecli_result_t initialize_globals();
 extern void free_ecl_state(ecl_state_t* state);
@@ -75,6 +91,8 @@ extern ecli_result_t state_get_variable(ecl_state_t* state, int32_t slot, ecl_va
 extern ecli_result_t state_set_variable(ecl_state_t* state, int32_t slot, ecl_value_t* value);
 
 /* interpreter.c */
+extern ecli_result_t run_all_ecl_instances(ecl_state_t* state);
+extern ecli_result_t run_interpreter_until_wait(ecl_state_t* state);
 extern ecli_result_t run_th10_instruction(ecl_state_t* state);
 
 #endif 

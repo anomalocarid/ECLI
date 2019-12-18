@@ -32,13 +32,28 @@
 
 #define STACK_SIZE 1024
 
-// Global variables
-static ecl_value_t player_x;
-static ecl_value_t player_y;
-static ecl_value_t timeout;
+ecl_global_state_t global;
 
 /**
- * Initialize the ECL interpreter state
+ * Allocate a new ECL VM
+ **/
+ecli_result_t 
+allocate_ecl_state(ecl_state_t** statep, th10_ecl_t* ecl)
+{
+    ecl_state_t* state = xmalloc(sizeof(ecl_state_t));
+    *statep = state;
+    ecli_result_t retval = initialize_ecl_state(state, ecl);
+    
+    if(FAILURE(retval)) {
+        xfree(state);
+        *statep = NULL;
+    }
+    
+    return retval;
+}
+
+/**
+ * Initialize a fresh ECL interpreter state
  **/
 ecli_result_t 
 initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl)
@@ -61,9 +76,9 @@ initialize_ecl_state(ecl_state_t* state, th10_ecl_t* ecl)
 ecli_result_t
 initialize_globals()
 {
-    player_x.type = ECL_FLOAT32; player_x.f = 0.0;
-    player_y.type = ECL_FLOAT32; player_y.f = 0.0;
-    timeout.type = ECL_INT32; timeout.i = 0;
+    global.player_x = 0.0;
+    global.player_y = 0.0;
+    global.timeout = 0;
     
     return ECLI_SUCCESS;
 }
@@ -77,6 +92,7 @@ free_ecl_state(ecl_state_t* state)
     xfree(state->stack);
     xfree(state->callstack);
     memset(state, 0, sizeof(ecl_state_t));
+    xfree(state);
 }
 
 /**
@@ -144,33 +160,46 @@ state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result)
         }
     } else { // global/local
         switch(slot) {
+            case -10000: // RAND
+                result->type = ECL_INT32;
+                result->i = rand();
+                break;
+            case -9988: // TIME
+                result->type = ECL_INT32;
+                result->i = state->time;
+                break;
+
             case -9959: // DIFF
                 result->type = ECL_INT32;
                 result->i = 0;
-                if(state->difficulty == DIFF_EASY) { result->i = 0; }
-                if(state->difficulty == DIFF_NORMAL) { result->i = 1; }
-                if(state->difficulty == DIFF_HARD) { result->i = 2; }
-                if(state->difficulty == DIFF_LUNATIC) { result->i = 3; }
+                if(global.difficulty == DIFF_EASY) { result->i = 0; }
+                if(global.difficulty == DIFF_NORMAL) { result->i = 1; }
+                if(global.difficulty == DIFF_HARD) { result->i = 2; }
+                if(global.difficulty == DIFF_LUNATIC) { result->i = 3; }
                 break;
                 
             case -9953: // EASY
                 result->type = ECL_INT32;
-                result->i = (state->difficulty == DIFF_EASY) ? 1 : 0;
+                result->i = (global.difficulty == DIFF_EASY) ? 1 : 0;
                 break;
                 
             case -9952: // NORMAL
                 result->type = ECL_INT32;
-                result->i = (state->difficulty == DIFF_NORMAL) ? 1 : 0;
+                result->i = (global.difficulty == DIFF_NORMAL) ? 1 : 0;
                 break;
 
             case -9951: // HARD
                 result->type = ECL_INT32;
-                result->i = (state->difficulty == DIFF_HARD) ? 1 : 0;
+                result->i = (global.difficulty == DIFF_HARD) ? 1 : 0;
                 break;
             
             case -9550: // LUNATIC
                 result->type = ECL_INT32;
-                result->i = (state->difficulty == DIFF_LUNATIC) ? 1 : 0;
+                result->i = (global.difficulty == DIFF_LUNATIC) ? 1 : 0;
+                break;
+            
+            case -1: // from top of stack
+                *result = *state_pop(state);
                 break;
         }
     }

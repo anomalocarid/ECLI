@@ -62,10 +62,17 @@ static const ins_format_t instruction_formats[] = {
     {INS_SETF, "f", "setf"},
     {INS_ADDI, "", "addi"},
     {INS_ADDF, "", "addf"},
+    {INS_MODI, "", "modi"},
     {INS_DECI, "i", "deci"},
     // Enemy property management and other miscellaneous things
     {INS_FLAGSET, "i", "flagSet"},
-    {INS_SETCHAPTER, "i", "setChapter"}
+    {INS_SETCHAPTER, "i", "setChapter"},
+    
+    // Custom instructions for debugging
+    {INS_PUTS, "s", "puts"},
+    {INS_PUTI, "i", "puti"},
+    {INS_PUTF, "f", "putf"},
+    {INS_ENDL, "", "endl"}
 };
 
 typedef struct {
@@ -102,7 +109,10 @@ static const variable_format_t variable_formats[] = {
     {-9952, "NORMAL"},
     {-9951, "HARD"},
     {-9950, "LUNATIC"},
-    {-9907, "SPELL_ID"}
+    {-9907, "SPELL_ID"},
+    
+    // Non-standard variables (for debugging)
+    
 };
 
 ecli_result_t

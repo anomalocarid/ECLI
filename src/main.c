@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "ecli.h"
 
+#ifndef max
+#define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
 static int show_header, show_includes;
-static int verbose;
 
 param_t params[] = {
     {'h', "help", NULL, 0, "Print this message."},
     {'d', "difficulty", NULL, 1, "Set the difficulty (easy, normal, hard, lunatic)"},
     {'H', "dump-header", &show_header, 0, "Dump the ECL header."},
     {'I', "dump-includes", &show_includes, 0, "Dump the ECL ANIM/ECLI includes."},
-    {'v', "verbose", &verbose, 0, "Print a lot of useful debug information."},
+    {'v', "verbose", &global.verbose, 0, "Print a lot of useful debug information."},
     {0, NULL, NULL, 0, NULL}
 };
 
@@ -22,11 +26,14 @@ const char* longdesc = NULL;
 int
 main(int argc, char** argv)
 {
+    srand(time(0));
+
     /* Parse command-line arguments */
     args_set(argc, argv);
     const char* fname = NULL;
     int c;
-    unsigned int difficulty = DIFF_LUNATIC;
+    
+    global.difficulty = DIFF_LUNATIC;
 
     while((c = arg_get(params)) != 0) {
         fflush(stdout);
@@ -39,13 +46,13 @@ main(int argc, char** argv)
             case 'd': {
                 const char* arg = arg_get_param();
                 if(strcmp(arg, "easy") == 0) {
-                    difficulty = DIFF_EASY;
+                    global.difficulty = DIFF_EASY;
                 } else if(strcmp(arg, "normal") == 0) {
-                    difficulty = DIFF_NORMAL;
+                    global.difficulty = DIFF_NORMAL;
                 } else if(strcmp(arg, "hard") == 0) {
-                    difficulty = DIFF_HARD;
+                    global.difficulty = DIFF_HARD;
                 } else if(strcmp(arg, "lunatic") == 0) {
-                    difficulty = DIFF_LUNATIC;
+                    global.difficulty = DIFF_LUNATIC;
                 } else {
                     fprintf(stderr, "Unknown difficulty: %s\n\n", arg);
                     arg_print_usage(desc, pos, params, longdesc);
@@ -135,42 +142,44 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    ecl_state_t state;
-    result = initialize_ecl_state(&state, &ecl);
+    ecl_state_t* main;
+    result = allocate_ecl_state(&main, &ecl);
     if(result != ECLI_SUCCESS) {
         fprintf(stderr, "Failed to initialize interpreter state.\n");
         free_th10_ecl(&ecl);
         return EXIT_FAILURE;
     }
-    state.difficulty = difficulty;
     
     /* Find main sub and execute */
     th10_ecl_sub_t* sub = get_th10_ecl_sub_by_name(&ecl, "main");
     if(sub == NULL) {
         fprintf(stderr, "ECL file has no main sub.\n");
-        free_ecl_state(&state);
+        free_ecl_state(main);
         free_th10_ecl(&ecl);
         return EXIT_FAILURE;
     }
     
     /* Current interpeter loop - get next instruction and execute */
-    state.ip = sub->start;
+    main->ip = sub->start;
     
     while(1) {
-        if(verbose) {
-            print_th10_instruction(state.ip);
-        }
-        fflush(stdout);
-        result = run_th10_instruction(&state);
+        result = run_all_ecl_instances(main);
         if(result == ECLI_DONE) {
             break;
         } else if(result == ECLI_FAILURE) {
             fprintf(stderr, "Interpretation failed.\n");
             break;
         }
+        
+        for(ecl_state_t* p = main; p != NULL; p = p->next) {
+            p->wait = max(p->wait - 1, 0);
+            if(p->wait == 0) {
+                p->time++;
+            }
+        }
     }
 
-    free_ecl_state(&state);
+    free_ecl_state(main);
     free_th10_ecl(&ecl);
 
     return EXIT_SUCCESS;

@@ -1,7 +1,4 @@
 * Debug code to print out the stack/interpreter state
 * Ability to step through an ECL file instruction by instruction
-* Support for multiple ECL instances (to allow async subs)
-* Support for time labels (frames)
-* Use binary search for finding subs by name
 * Support for ECL local/global variables
-* Better ECL instruction parameter handling
+* Fix weird issue with printing global $LUNATIC

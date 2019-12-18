@@ -55,11 +55,16 @@ typedef enum {
     INS_SETF=45,
     INS_ADDI=50,
     INS_ADDF=51,
+    INS_MODI=58,
     INS_DECI=78,
     // Enemy property management and other miscellaneous things
     INS_FLAGSET=502,
     INS_SETCHAPTER=524,
-    
+    // Custom instructions for debugging
+    INS_PUTS=2000,
+    INS_PUTI=2001,
+    INS_PUTF=2002,
+    INS_ENDL=2003,
     INS_INVALID=0xFFFF
 } ecl_ins_id;
 

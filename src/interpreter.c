@@ -33,6 +33,64 @@
 #include "state.h"
 
 /**
+ * Run a linked-list of ECL VMs
+ **/
+ecli_result_t
+run_all_ecl_instances(ecl_state_t* state)
+{
+    ecli_result_t retval = ECLI_SUCCESS;
+    ecl_state_t* cur = state;
+    ecl_state_t* prev = state;
+
+    do {
+        retval = run_interpreter_until_wait(cur);
+        
+        switch(retval) {
+            case ECLI_DONE: // interpreter done, remove it from the list
+                if((cur == state) && (cur->next == NULL)) { 
+                    return ECLI_DONE; // no interpreters remaining
+                }
+                prev->next = cur->next;
+                cur->next = NULL;
+                free_ecl_state(cur);
+                cur = prev;
+                retval = ECLI_SUCCESS;
+                break;
+            
+            case ECLI_FAILURE:
+                return ECLI_FAILURE;
+            
+            default:
+                break;
+        }
+        
+        prev = cur;
+        cur = cur->next;
+    } while(prev->next != NULL);
+    
+    return retval;
+}
+
+/**
+ * Run an interpreter until it reaches a wait instruction
+ **/
+ecli_result_t
+run_interpreter_until_wait(ecl_state_t* state)
+{
+    ecli_result_t retval = ECLI_SUCCESS;
+    
+    while((state->wait == 0) && (state->time >= state->ip->time)) {
+        if(global.verbose) {
+            print_th10_instruction(state->ip);
+        }
+        if(!SUCCESS(retval = run_th10_instruction(state))) {
+            return retval; // either failure or the interpreter returned from its "main"
+        }
+    }
+    return retval;
+}
+
+/**
  * Run a single ECL instruction
  **/
 ecli_result_t
@@ -48,7 +106,7 @@ run_th10_instruction(ecl_state_t* state)
     th10_instr_t* ins = state->ip;
     th10_instr_t* next = (th10_instr_t*)(((uint8_t*)ins) + ins->size);
 
-    if(!(state->difficulty & ins->rank_mask)) {
+    if(!(global.difficulty & ins->rank_mask)) {
         state->ip = next;
         return ECLI_SUCCESS;
     }
@@ -74,6 +132,9 @@ run_th10_instruction(ecl_state_t* state)
 
     // Execute the instruction
     switch(ins->id) {
+        case INS_NOP:
+            break;
+
         case INS_RET: // return
             state->sp = state->bp;
             state->bp = state_pop(state)->u;
@@ -90,8 +151,28 @@ run_th10_instruction(ecl_state_t* state)
             if(sub == NULL) {
                 fprintf(stderr, "call: sub \"%s\" does not exist\n", params[0].s);
                 retval = ECLI_FAILURE;
+                break;
             }
             next = sub->start;
+        }   break;
+        
+        case INS_CALLASYNC: { // callAsync
+            ecl_state_t* child;
+            retval = allocate_ecl_state(&child, state->ecl); // new VM
+            if(SUCCESS(retval)) {
+                th10_ecl_sub_t* sub = get_th10_ecl_sub_by_name(state->ecl, params[0].s);
+                if(sub == NULL) {
+                    fprintf(stderr, "callAsync: sub \"%s\" does not exist\n", params[0].s);
+                    retval = ECLI_FAILURE;
+                    free_ecl_state(child);
+                    break;
+                }
+                // add new VM to linked list and set its IP to start on the sub
+                ecl_state_t* p = state;
+                while(p->next != NULL) { p = p->next; }
+                p->next = child;
+                child->ip = sub->start;
+            }
         }   break;
         
         case INS_JMP: { // jmp (unconditional goto)
@@ -122,11 +203,7 @@ run_th10_instruction(ecl_state_t* state)
         
         case INS_WAIT: { // wait 
             int32_t amt = values[0].i;
-            // TODO: actually wait
-        }   break;
-        
-        case INS_UNKNOWN30: { // unknown30 - we're using this as a string print statement
-            printf("%s\n", values[0].s);
+            state->wait = amt;
         }   break;
 
         case INS_STACKALLOC: { // stackAlloc
@@ -164,6 +241,13 @@ run_th10_instruction(ecl_state_t* state)
             top->type = ECL_FLOAT32;
         }   break;
         
+        case INS_MODI: {
+            value = state_pop(state); // modulo
+            ecl_value_t* top = state_peek(state);
+            top->i = top->i % value->i;
+            top->type = ECL_INT32;
+        }   break;
+        
         case INS_DECI: { // deci
             values[0].type = ECL_INT32;
             retval = state_push(state, &values[0]);
@@ -177,9 +261,25 @@ run_th10_instruction(ecl_state_t* state)
         }
         
         case INS_SETCHAPTER: { // setChapter
-            state->chapter = values[0].i;
+            global.chapter = values[0].i;
         }   break;
         
+        case INS_PUTS: { // custom - print a string
+            printf("%s", values[0].s);
+        }   break;
+        
+        case INS_PUTI: {
+            printf("%d", values[0].i);
+        }   break;
+        
+        case INS_PUTF: {
+            printf("%f", values[0].f);
+        }   break;
+        
+        case INS_ENDL: {
+            putchar('\n');
+        }   break;
+
         default:
             fprintf(stderr, "Unknown instruction id: %d\n", ins->id);
             retval = ECLI_FAILURE;
