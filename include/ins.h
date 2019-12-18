@@ -55,7 +55,10 @@ typedef enum {
     INS_SETF=45,
     INS_ADDI=50,
     INS_ADDF=51,
+    INS_MULI=54,
     INS_MODI=58,
+    INS_EQI=59,
+    INS_LESSI=63,
     INS_DECI=78,
     // Enemy property management and other miscellaneous things
     INS_FLAGSET=502,

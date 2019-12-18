@@ -241,11 +241,32 @@ run_th10_instruction(ecl_state_t* state)
             top->type = ECL_FLOAT32;
         }   break;
         
+        case INS_MULI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->i *= value->i;
+            top->type = ECL_INT32;
+        }   break;
+        
         case INS_MODI: {
             value = state_pop(state); // modulo
             ecl_value_t* top = state_peek(state);
             top->i = top->i % value->i;
             top->type = ECL_INT32;
+        }   break;
+        
+        case INS_EQI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->type = ECL_INT32;
+            top->i = (top->i == value->i) ? 1 : 0;
+        }   break;
+        
+        case INS_LESSI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->type = ECL_INT32;
+            top->i = (top->i < value->i) ? 1 : 0;
         }   break;
         
         case INS_DECI: { // deci

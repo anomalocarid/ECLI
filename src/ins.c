@@ -62,7 +62,10 @@ static const ins_format_t instruction_formats[] = {
     {INS_SETF, "f", "setf"},
     {INS_ADDI, "", "addi"},
     {INS_ADDF, "", "addf"},
+    {INS_MULI, "", "muli"},
     {INS_MODI, "", "modi"},
+    {INS_EQI, "", "eqi"},
+    {INS_LESSI, "", "lessi"},
     {INS_DECI, "i", "deci"},
     // Enemy property management and other miscellaneous things
     {INS_FLAGSET, "i", "flagSet"},
