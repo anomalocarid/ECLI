@@ -1,0 +1,28 @@
+/**
+ * The "Hello, world!" script for ecli.
+ *
+ * This script will print "Hello, world!" to the console before quitting.
+ * It uses custom instructions added by ecli to do this, as the ECL engine
+ * in the TSA games does not have an instruction to do so.
+ *
+ * To compile this script, do
+ *     thecl -c 17 hello.tecl hello.ecl
+ * on the command line. Then it can be run with
+ *     ecli hello.ecl
+ **/
+// Include the ECL map which defines the custom instructions and the names
+// for the instructions and variables supported by ecli.
+#eclmap "include/ecli.eclm"
+
+// The main() sub is the entry point for any ECL file ran by ecli.
+void main()
+{
+    // puts is a custom instruction which prints a string to the console.
+    puts("Hello, world!");
+    // since puts does not add a newline, I implemented another instruction
+    // which does
+    endl();
+    // return exits from the sub. If main is returned from, ecli exits.
+    // this instruction is added by thecl if it is not present.
+    return; 
+}

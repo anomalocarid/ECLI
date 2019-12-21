@@ -1,4 +1,5 @@
 * Debug code to print out the stack/interpreter state
 * Ability to step through an ECL file instruction by instruction
 * Support for ECL local/global variables
+* Implement parameter passing to subs
 * Fix weird issue with printing global $LUNATIC

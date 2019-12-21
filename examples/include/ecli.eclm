@@ -1,0 +1,51 @@
+!eclmap
+!ins_signatures
+2000 m
+2001 S
+2002 f
+2003 _
+
+!ins_names
+0 nop
+1 delete
+10 ret
+11 call
+12 jmp
+13 jmpEq
+14 jmpNeq
+15 callAsync
+21 unknown21
+23 wait
+30 unknown30
+40 stackAlloc
+42 push
+43 set
+44 pushf
+45 setf
+50 addi
+51 addf
+54 muli
+58 modi
+59 eqi
+63 lessi
+78 deci
+
+502 flagSet
+524 setChapter
+
+2000 puts
+2001 puti
+2002 putf
+2003 endl
+
+!gvar_names
+-10000 RAND
+-9999 RANDF
+-9998 RANDRAD
+-9953 EASY
+
+!gvar_types
+-10000 $
+-9999 %
+-9998 %
+-9953 $
