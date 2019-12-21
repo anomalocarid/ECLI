@@ -193,6 +193,11 @@ state_get_variable(ecl_state_t* state, int32_t slot, ecl_value_t* result)
                 result->i = (global.difficulty == DIFF_HARD) ? 1 : 0;
                 break;
             
+            case -9907: // SPELL_ID
+                result->type = ECL_INT32;
+                result->i = -1;
+                break;
+            
             case -9550: // LUNATIC
                 result->type = ECL_INT32;
                 result->i = (global.difficulty == DIFF_LUNATIC) ? 1 : 0;

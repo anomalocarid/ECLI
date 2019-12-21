@@ -133,6 +133,8 @@ run_th10_instruction(ecl_state_t* state)
     // Execute the instruction
     switch(ins->id) {
         case INS_NOP:
+        case INS_UNKNOWN21:
+        case INS_DEBUG22:
             break;
 
         case INS_RET: // return
@@ -184,22 +186,18 @@ run_th10_instruction(ecl_state_t* state)
         case INS_JMPEQ: { // jmpEq
             value = state_pop(state);
             if(value->i == 0) {
-                uint32_t at_time = params[1].u;
-                
+                state->time = params[1].u;
                 next = (th10_instr_t*)(((uint8_t*)ins) + params[0].i);
             }
         }   break;
         
-        case INS_UNKNOWN21: { // unknown21 - use it to print the top of the stack
-            if(state->sp > 0) {
-                ecl_value_t* val = state_pop(state);
-                if(val->type == ECL_INT32) {
-                    printf("%d\n", val->i);
-                } else if(val->type == ECL_FLOAT32) {
-                    printf("%f\n", val->f);
-                }
+        case INS_JMPNEQ:
+            value = state_pop(state);
+            if(value->i != 0) {
+                state->time = params[1].u;
+                next = (th10_instr_t*)(((uint8_t*)ins) + params[0].i);
             }
-        }   break;
+            break;
         
         case INS_WAIT: { // wait 
             int32_t amt = values[0].i;
@@ -217,13 +215,11 @@ run_th10_instruction(ecl_state_t* state)
 
         case INS_SET: { // set
             value = state_pop(state);
-            value->type = ECL_INT32;
             retval = state_set_variable(state, params[0].i, value);
         }   break;
         
         case INS_SETF: {
             value = state_pop(state);
-            value->type = ECL_FLOAT32;
             retval = state_set_variable(state, params[0].i, value);
         }   break;
         
@@ -238,6 +234,13 @@ run_th10_instruction(ecl_state_t* state)
             value = state_pop(state);
             ecl_value_t* top = state_peek(state);
             top->f += value->f;
+            top->type = ECL_FLOAT32;
+        }   break;
+        
+        case INS_SUBF: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->f -= value->f;
             top->type = ECL_FLOAT32;
         }   break;
         
@@ -267,6 +270,20 @@ run_th10_instruction(ecl_state_t* state)
             ecl_value_t* top = state_peek(state);
             top->type = ECL_INT32;
             top->i = (top->i < value->i) ? 1 : 0;
+        }   break;
+        
+        case INS_LEQI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->type = ECL_INT32;
+            top->i = (top->i <= value->i) ? 1 : 0;
+        }   break;
+        
+        case INS_GEQI: {
+            value = state_pop(state);
+            ecl_value_t* top = state_peek(state);
+            top->type = ECL_INT32;
+            top->i = (top->i >= value->i) ? 1 : 0;
         }   break;
         
         case INS_DECI: { // deci
